@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self' 'unsafe-inline';" />
+    <title>Electron Chrome</title>
+  </head>
+  <body>
+    <div class="shell">
+      <div class="tabbar">
+        <div id="tabsHost" class="tabs-host">
+          <div id="tabs" class="tabs"></div>
+          <button id="addTabButton" class="tab-add" type="button" title="新建标签页">+</button>
+        </div>
+      </div>
+
+      <div class="toolbar">
+        <div class="nav-group">
+          <button id="backButton" class="nav-button" type="button" title="后退">←</button>
+          <button id="forwardButton" class="nav-button" type="button" title="前进">→</button>
+          <button id="reloadButton" class="nav-button" type="button" title="刷新">↻</button>
+        </div>
+        <div class="address-shell">
+          <span class="address-icon">🔎</span>
+          <input id="urlInput" class="url-input" type="text" placeholder="输入网址，例如 https://www.baidu.com" />
+        </div>
+        <button id="goButton" class="go-button" type="button">打开</button>
+
+        <div class="status-stack">
+          <div id="statusText" class="status">准备中...</div>
+        </div>
+
+        <button id="appMenuButton" class="app-menu-button" type="button" title="菜单">☰ 菜单</button>
+      </div>
+    </div>
+    <script type="module" src="./main.ts"></script>
+  </body>
+</html>

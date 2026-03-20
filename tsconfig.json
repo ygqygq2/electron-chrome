@@ -1,0 +1,14 @@
+{
+  "extends": "@ygqygq2/typescript-config/electron.json",
+  "compilerOptions": {
+    "moduleResolution": "Bundler",
+    "allowJs": false,
+    "noEmit": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noFallthroughCasesInSwitch": true,
+    "types": ["node"],
+    "baseUrl": "."
+  },
+  "include": ["electron/**/*.ts", "src/**/*.ts", "vite.config.ts", "eslint.config.js"]
+}

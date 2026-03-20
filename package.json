@@ -1,0 +1,69 @@
+{
+  "name": "electron-chrome",
+  "version": "0.0.0",
+  "description": "Pure Chrome-style Electron shell used to validate browser fundamentals before integrating into video-downloader.",
+  "main": "dist-electron/main.js",
+  "type": "module",
+  "repository": "git@github.com:ygqygq2/electron-chrome.git",
+  "keywords": [
+    "electron",
+    "chrome",
+    "browser-shell",
+    "vite",
+    "typescript"
+  ],
+  "author": "ygqygq2",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build && electron-builder",
+    "app:dir": "vite build && electron-builder --dir",
+    "app:dist": "vite build && electron-builder",
+    "app:win": "vite build && electron-builder --win nsis portable --x64",
+    "app:win:portable": "vite build && electron-builder --win portable --x64",
+    "app:win:installer": "vite build && electron-builder --win nsis --x64",
+    "lint": "eslint src electron",
+    "lint-fix": "eslint --fix src electron",
+    "stylelint": "stylelint \"src/**/*.css\"",
+    "stylelint-fix": "stylelint \"src/**/*.css\" --fix",
+    "clean": "rimraf dist dist-electron release",
+    "type-check": "tsc --noEmit",
+    "postinstall": "simple-git-hooks",
+    "preinstall": "npx only-allow pnpm"
+  },
+  "devDependencies": {
+    "@types/node": "^24.5.2",
+    "@ygqygq2/eslint-config": "^1.1.1",
+    "@ygqygq2/stylelint-config": "^0.0.4",
+    "@ygqygq2/typescript-config": "^0.0.6",
+    "electron": "^40.8.3",
+    "electron-builder": "^26.0.12",
+    "eslint": "^9.23.0",
+    "prettier": "^3.5.3",
+    "rimraf": "^6.0.1",
+    "simple-git-hooks": "^2.13.1",
+    "stylelint": "^16.18.0",
+    "stylelint-config-css-modules": "^4.5.1",
+    "stylelint-config-recess-order": "^7.3.0",
+    "stylelint-config-standard": "^39.0.1",
+    "stylelint-prettier": "^5.0.3",
+    "typescript": "^5.8.3",
+    "vite": "^6.2.6",
+    "vite-plugin-electron": "^0.29.0",
+    "vite-plugin-electron-renderer": "^0.14.6"
+  },
+  "packageManager": "pnpm@9.12.0",
+  "engines": {
+    "node": ">=18"
+  },
+  "pnpm": {
+    "peerDependencyRules": {
+      "allowedVersions": {
+        "electron-builder-squirrel-windows": "*",
+        "dmg-builder": "*"
+      }
+    }
+  },
+  "simple-git-hooks": {
+    "preserveUnused": true
+  }
+}

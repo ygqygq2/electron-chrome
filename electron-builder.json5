@@ -1,0 +1,44 @@
+// @see - https://www.electron.build/configuration/configuration
+{
+  "$schema": "https://raw.githubusercontent.com/electron-userland/electron-builder/master/packages/app-builder-lib/scheme.json",
+  "appId": "com.ygqygq2.electron-chrome",
+  "asar": true,
+  "compression": "maximum",
+  "productName": "ElectronChrome",
+  "directories": {
+    "output": "release/${version}"
+  },
+  "files": ["dist", "dist-electron"],
+  "win": {
+    "icon": "public/icons/app.ico",
+    "target": [
+      {
+        "target": "nsis",
+        "arch": ["x64"]
+      },
+      {
+        "target": "portable",
+        "arch": ["x64"]
+      }
+    ],
+    "artifactName": "${productName}-Windows-${version}-Setup.${ext}"
+  },
+  "nsis": {
+    "oneClick": false,
+    "perMachine": false,
+    "allowToChangeInstallationDirectory": true,
+    "installerIcon": "public/icons/app.ico",
+    "uninstallerIcon": "public/icons/app.ico",
+    "installerHeaderIcon": "public/icons/app.ico",
+    "deleteAppDataOnUninstall": false
+  },
+  "portable": {
+    "artifactName": "${productName}-Windows-${version}-Portable.${ext}"
+  },
+  "linux": {
+    "icon": "public/icons",
+    "target": ["AppImage"],
+    "artifactName": "${productName}-Linux-${version}.${ext}",
+    "category": "Network"
+  }
+}

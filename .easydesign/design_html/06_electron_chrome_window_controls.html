@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>06 自定义窗口控制按钮</title>
+    <style>
+      :root {
+        font-family: "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+        color-scheme: light;
+        --shell-top: #eff3f8;
+        --shell-bottom: #e7edf4;
+        --line: #cad4df;
+        --panel: #fff;
+        --text: #1f2328;
+        --muted: #6b7785;
+        --danger: #e05757;
+      }
+      * { box-sizing: border-box; }
+      body { margin: 0; background: #dce4ee; }
+      .window {
+        width: 1100px;
+        margin: 40px auto;
+        border: 1px solid var(--line);
+        border-radius: 16px;
+        overflow: hidden;
+        background: var(--panel);
+      }
+      .shell {
+        padding: 8px 10px 7px;
+        background: linear-gradient(180deg, var(--shell-top) 0%, var(--shell-bottom) 100%);
+        border-bottom: 1px solid var(--line);
+      }
+      .toolbar {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+        min-height: 38px;
+      }
+      .address {
+        flex: 1;
+        height: 34px;
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        background: #fff;
+      }
+      .status { font-size: 12px; color: var(--muted); }
+      .btn, .menu, .wc {
+        height: 32px;
+        border: 1px solid var(--line);
+        border-radius: 9px;
+        background: linear-gradient(180deg, #fff 0%, #f1f5f9 100%);
+        color: var(--text);
+      }
+      .btn { width: 32px; }
+      .menu { width: 32px; }
+      .right {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+        margin-left: auto;
+      }
+      .window-controls {
+        display: flex;
+        gap: 6px;
+        align-items: center;
+      }
+      .wc {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 32px;
+        font-size: 14px;
+      }
+      .wc.close:hover {
+        color: #fff;
+        background: var(--danger);
+        border-color: var(--danger);
+      }
+      .content { height: 520px; background: #fff; }
+    </style>
+  </head>
+  <body>
+    <div class="window">
+      <div class="shell">
+        <div class="toolbar">
+          <button class="btn">‹</button>
+          <button class="btn">›</button>
+          <button class="btn">↻</button>
+          <div class="address"></div>
+          <div class="right">
+            <div class="status">www.baidu.com</div>
+            <button class="menu">☰</button>
+            <div class="window-controls">
+              <button class="wc">—</button>
+              <button class="wc">□</button>
+              <button class="wc close">✕</button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="content"></div>
+    </div>
+  </body>
+</html>

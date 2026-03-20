@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>05 主题模式支持</title>
+    <style>
+      :root {
+        font-family: "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+        color-scheme: light;
+        --page-bg: #dce4ee;
+        --shell-top: #eff3f8;
+        --shell-bottom: #e7edf4;
+        --line: #cad4df;
+        --panel: #ffffff;
+        --panel-soft: #f4f7fb;
+        --text: #1f2328;
+        --muted: #6b7785;
+        --accent: #2f7cf6;
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        min-height: 100vh;
+        background: linear-gradient(180deg, #d8e1eb 0%, var(--page-bg) 100%);
+        color: var(--text);
+      }
+      body.dark {
+        color-scheme: dark;
+        --page-bg: #0f1722;
+        --shell-top: #1a2330;
+        --shell-bottom: #121923;
+        --line: #334155;
+        --panel: #18212c;
+        --panel-soft: #111922;
+        --text: #edf2f7;
+        --muted: #93a1b1;
+        --accent: #5b9cff;
+      }
+      .wrap {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(420px, 1fr));
+        gap: 28px;
+        padding: 32px;
+      }
+      .window {
+        overflow: hidden;
+        border: 1px solid var(--line);
+        border-radius: 16px;
+        background: var(--panel);
+        box-shadow: 0 24px 60px rgb(15 23 34 / 18%);
+      }
+      .shell {
+        padding: 8px 10px 7px;
+        background: linear-gradient(180deg, var(--shell-top) 0%, var(--shell-bottom) 100%);
+        border-bottom: 1px solid var(--line);
+      }
+      .row { display: flex; align-items: center; }
+      .tabs { gap: 4px; }
+      .tab {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        max-width: 220px;
+        padding: 8px 12px 7px;
+        background: var(--panel-soft);
+        border: 1px solid transparent;
+        border-radius: 10px 10px 0 0;
+        color: var(--muted);
+      }
+      .tab.active {
+        background: var(--panel);
+        border-color: var(--line);
+        border-bottom-color: var(--panel);
+        color: var(--text);
+      }
+      .toolbar { gap: 8px; margin-top: 6px; }
+      .btn, .go, .menu {
+        height: 32px;
+        border-radius: 9px;
+        border: 1px solid var(--line);
+        background: linear-gradient(180deg, var(--panel) 0%, var(--panel-soft) 100%);
+        color: var(--text);
+      }
+      .btn { width: 32px; }
+      .address {
+        display: flex;
+        flex: 1;
+        align-items: center;
+        height: 34px;
+        padding: 0 12px;
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        background: var(--panel);
+      }
+      .go {
+        padding: 0 14px;
+        border-color: var(--accent);
+        background: linear-gradient(180deg, color-mix(in srgb, var(--accent) 78%, white) 0%, var(--accent) 100%);
+        color: white;
+      }
+      .menu { width: 32px; }
+      .status { margin-left: auto; font-size: 12px; color: var(--muted); }
+      .content { height: 240px; background: var(--panel); }
+      .caption { margin: 0 0 10px; font-size: 14px; color: var(--muted); }
+      h2 { margin: 0 0 12px; font-size: 18px; }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <section>
+        <h2>Light</h2>
+        <p class="caption">浅色模式保持当前浏览器风作为基线。</p>
+        <div class="window">
+          <div class="shell">
+            <div class="row tabs">
+              <div class="tab active">Baidu 首页</div>
+              <div class="tab">新标签页</div>
+              <button class="btn">+</button>
+            </div>
+            <div class="row toolbar">
+              <button class="btn">‹</button>
+              <button class="btn">›</button>
+              <button class="btn">↻</button>
+              <div class="address">https://www.baidu.com/</div>
+              <button class="go">打开</button>
+              <div class="status">www.baidu.com</div>
+              <button class="menu">☰</button>
+            </div>
+          </div>
+          <div class="content"></div>
+        </div>
+      </section>
+
+      <section>
+        <h2>Dark / System</h2>
+        <p class="caption">深色模式用同一布局，只替换主题 token；system 最终也会解析到其中之一。</p>
+        <div class="window">
+          <div class="shell">
+            <div class="row tabs">
+              <div class="tab active">设置</div>
+              <div class="tab">新标签页</div>
+              <button class="btn">+</button>
+            </div>
+            <div class="row toolbar">
+              <button class="btn">‹</button>
+              <button class="btn">›</button>
+              <button class="btn">↻</button>
+              <div class="address">chrome://settings</div>
+              <button class="go">打开</button>
+              <div class="status">深色模式</div>
+              <button class="menu">☰</button>
+            </div>
+          </div>
+          <div class="content"></div>
+        </div>
+      </section>
+    </div>
+
+    <script>
+      document.querySelectorAll('.wrap section')[1].querySelector('.window').closest('section').parentElement.parentElement.classList.add?.('');
+    </script>
+  </body>
+</html>

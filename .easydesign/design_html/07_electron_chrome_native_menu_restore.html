@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>07 原生菜单恢复</title>
+    <style>
+      body { margin: 0; background: #dce4ee; font-family: "Segoe UI", "PingFang SC", sans-serif; }
+      .window {
+        width: 1100px;
+        margin: 40px auto;
+        border: 1px solid #cad4df;
+        border-radius: 14px;
+        overflow: hidden;
+        background: #fff;
+      }
+      .native-menu {
+        display: flex;
+        gap: 24px;
+        align-items: center;
+        height: 32px;
+        padding: 0 14px;
+        font-size: 13px;
+        color: #1f2328;
+        background: #f3f6fa;
+        border-bottom: 1px solid #d5dde7;
+      }
+      .shell {
+        height: 92px;
+        background: linear-gradient(180deg, #eff3f8 0%, #e7edf4 100%);
+        border-bottom: 1px solid #cad4df;
+      }
+      .content { height: 520px; background: #fff; }
+    </style>
+  </head>
+  <body>
+    <div class="window">
+      <div class="native-menu">
+        <span>文件</span>
+        <span>导航</span>
+        <span>调试</span>
+        <span>主题</span>
+      </div>
+      <div class="shell"></div>
+      <div class="content"></div>
+    </div>
+  </body>
+</html>

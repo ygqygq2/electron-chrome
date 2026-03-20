@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>08 浏览器快捷按钮与窗口控制</title>
+    <style>
+      :root {
+        font-family: "Segoe UI", "PingFang SC", sans-serif;
+        --top: #eff3f8;
+        --bottom: #e7edf4;
+        --line: #cad4df;
+        --text: #1f2328;
+        --muted: #6b7785;
+        --danger: #df5b5b;
+      }
+      * { box-sizing: border-box; }
+      body { margin: 0; background: #dce4ee; }
+      .window {
+        width: 1280px;
+        margin: 36px auto;
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        overflow: hidden;
+        background: #fff;
+      }
+      .shell {
+        padding: 8px 10px 7px;
+        background: linear-gradient(180deg, var(--top) 0%, var(--bottom) 100%);
+        border-bottom: 1px solid var(--line);
+      }
+      .tabbar {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+        margin-bottom: 6px;
+      }
+      .toolbar {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+        min-height: 38px;
+      }
+      .group, .tail, .window-controls { display: flex; gap: 6px; align-items: center; }
+      .tabs-host {
+        display: flex;
+        flex: 1;
+        gap: 4px;
+        align-items: flex-end;
+      }
+      .tab {
+        width: 176px;
+        max-width: 176px;
+        height: 32px;
+        padding: 0 14px;
+        color: var(--text);
+        background: linear-gradient(180deg, #ffffff 0%, #dbe3ec 100%);
+        border: 1px solid var(--line);
+        border-bottom: none;
+        border-radius: 10px 10px 0 0;
+      }
+      .address {
+        flex: 1;
+        height: 34px;
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        background: #fff;
+      }
+      .btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 32px;
+        height: 32px;
+        color: var(--text);
+        background: linear-gradient(180deg, #fff 0%, #f1f5f9 100%);
+        border: 1px solid var(--line);
+        border-radius: 9px;
+      }
+      .tail { margin-left: auto; }
+      .status { font-size: 12px; color: var(--muted); margin-right: 2px; }
+      .close:hover { color: #fff; background: var(--danger); border-color: var(--danger); }
+      .content { height: 520px; }
+    </style>
+  </head>
+  <body>
+    <div class="window">
+      <div class="shell">
+        <div class="tabbar">
+          <div class="tabs-host">
+            <div class="tab">设置</div>
+            <button class="btn">+</button>
+          </div>
+          <div class="window-controls">
+            <button class="btn">—</button>
+            <button class="btn">□</button>
+            <button class="btn close">✕</button>
+          </div>
+        </div>
+        <div class="toolbar">
+          <div class="group">
+            <button class="btn">‹</button>
+            <button class="btn">›</button>
+            <button class="btn">↻</button>
+            <button class="btn">⌂</button>
+          </div>
+          <div class="address"></div>
+          <div class="tail">
+            <div class="status">www.baidu.com</div>
+            <button class="btn">↶</button>
+            <button class="btn">⇩</button>
+            <button class="btn">◧</button>
+            <button class="btn">☰</button>
+          </div>
+        </div>
+      </div>
+      <div class="content"></div>
+    </div>
+  </body>
+</html>

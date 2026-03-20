@@ -1,0 +1,205 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>04 浅色浏览器壳视觉重构</title>
+    <style>
+      :root {
+        color-scheme: light;
+        font-family: "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+        --bg: #eef2f6;
+        --top: #e9edf3;
+        --tab: #dde4ec;
+        --tab-active: #ffffff;
+        --line: #ccd5df;
+        --text: #1f2328;
+        --muted: #6b7785;
+        --accent: #2f7cf6;
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        background: linear-gradient(180deg, #dfe6ee 0%, #edf2f7 100%);
+        color: var(--text);
+      }
+      .window {
+        width: 1100px;
+        margin: 40px auto;
+        border: 1px solid #cfd7e1;
+        border-radius: 16px;
+        overflow: hidden;
+        background: #fff;
+        box-shadow: 0 24px 60px rgb(31 35 40 / 16%);
+      }
+      .shell {
+        padding: 10px 12px 8px;
+        background: linear-gradient(180deg, #eef2f6 0%, #e8edf3 100%);
+        border-bottom: 1px solid var(--line);
+      }
+      .tabbar,
+      .toolbar {
+        display: flex;
+        align-items: center;
+      }
+      .tabbar {
+        gap: 6px;
+        min-height: 34px;
+      }
+      .tabs {
+        display: flex;
+        flex: 1;
+        gap: 4px;
+        min-width: 0;
+      }
+      .tab {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+        min-width: 0;
+        max-width: 240px;
+        padding: 8px 12px;
+        font-size: 13px;
+        color: #445160;
+        background: linear-gradient(180deg, #e2e8ef 0%, #d8e0e8 100%);
+        border: 1px solid transparent;
+        border-radius: 10px 10px 0 0;
+      }
+      .tab.active {
+        color: #111827;
+        background: var(--tab-active);
+        border-color: var(--line);
+        border-bottom-color: #fff;
+      }
+      .dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 999px;
+        background: #6b93ff;
+        flex: 0 0 auto;
+      }
+      .tab-title {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      .tab-close,
+      .tab-add,
+      .icon-btn,
+      .menu-btn {
+        border: 1px solid #d1d9e2;
+        background: linear-gradient(180deg, #ffffff 0%, #f2f5f8 100%);
+        color: #556270;
+        cursor: pointer;
+      }
+      .tab-close {
+        width: 18px;
+        height: 18px;
+        border-radius: 999px;
+        font-size: 12px;
+      }
+      .tab-add,
+      .icon-btn,
+      .menu-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        height: 32px;
+        border-radius: 9px;
+      }
+      .tab-add,
+      .icon-btn {
+        width: 32px;
+      }
+      .toolbar {
+        gap: 8px;
+        margin-top: 8px;
+        min-height: 38px;
+      }
+      .address {
+        display: flex;
+        flex: 1;
+        align-items: center;
+        gap: 10px;
+        min-width: 0;
+        height: 36px;
+        padding: 0 12px;
+        background: #fff;
+        border: 1px solid #cfd7e1;
+        border-radius: 999px;
+        box-shadow: inset 0 1px 0 rgb(255 255 255 / 70%);
+      }
+      .address input {
+        flex: 1;
+        min-width: 0;
+        border: 0;
+        outline: none;
+        background: transparent;
+        font-size: 13px;
+      }
+      .go-btn {
+        height: 32px;
+        padding: 0 14px;
+        color: #fff;
+        background: linear-gradient(180deg, #4a93ff 0%, #2f7cf6 100%);
+        border: 1px solid #2f7cf6;
+        border-radius: 9px;
+        font-weight: 600;
+      }
+      .right {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+      }
+      .status {
+        font-size: 12px;
+        color: var(--muted);
+      }
+      .menu-btn {
+        padding: 0 10px;
+        font-size: 13px;
+        font-weight: 600;
+      }
+      .content {
+        height: 620px;
+        background: linear-gradient(180deg, #fff 0%, #fcfdff 100%);
+      }
+    </style>
+  </head>
+  <body>
+    <div class="window">
+      <div class="shell">
+        <div class="tabbar">
+          <div class="tabs">
+            <div class="tab active">
+              <span class="dot"></span>
+              <span class="tab-title">韩国人孝顺方式:带爸妈来广东</span>
+              <button class="tab-close">×</button>
+            </div>
+            <div class="tab">
+              <span class="dot" style="background:#9aa6b2"></span>
+              <span class="tab-title">新标签页</span>
+              <button class="tab-close">×</button>
+            </div>
+          </div>
+          <button class="tab-add">+</button>
+        </div>
+        <div class="toolbar">
+          <button class="icon-btn">←</button>
+          <button class="icon-btn">→</button>
+          <button class="icon-btn">↻</button>
+          <div class="address">
+            <span style="color:#7b8794">🔎</span>
+            <input value="https://www.baidu.com/" />
+          </div>
+          <button class="go-btn">打开</button>
+          <div class="right">
+            <div class="status">www.baidu.com</div>
+            <button class="menu-btn">☰</button>
+          </div>
+        </div>
+      </div>
+      <div class="content"></div>
+    </div>
+  </body>
+</html>

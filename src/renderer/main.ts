@@ -2,12 +2,14 @@ import "./styles.css";
 
 import type {
   DockedShellMenuAnchor,
+  DockedShellMenuSection,
   DockedShellStateSnapshot,
   DockedShellTabSnapshot,
+  DockedShellToolbarContextButtonId,
 } from "../../electron/preload";
 
-const TAB_PREFERRED_WIDTH = 220;
-const TAB_MIN_WIDTH = 108;
+const TAB_PREFERRED_WIDTH = 176;
+const TAB_MIN_WIDTH = 100;
 const TAB_GAP = 4;
 
 const tabsHost = document.getElementById("tabsHost") as HTMLDivElement;
@@ -22,18 +24,73 @@ const forwardButton = document.getElementById(
 const reloadButton = document.getElementById(
   "reloadButton",
 ) as HTMLButtonElement;
+const homeButton = document.getElementById("homeButton") as HTMLButtonElement;
+const leftToolbarActions = document.getElementById(
+  "leftToolbarActions",
+) as HTMLDivElement;
 const urlInput = document.getElementById("urlInput") as HTMLInputElement;
-const goButton = document.getElementById("goButton") as HTMLButtonElement;
+const statusStack = document.querySelector(".status-stack") as HTMLDivElement;
 const statusText = document.getElementById("statusText") as HTMLDivElement;
+const rightToolbarActions = document.getElementById(
+  "rightToolbarActions",
+) as HTMLDivElement;
+const restoreTabButton = document.getElementById(
+  "restoreTabButton",
+) as HTMLButtonElement;
+const favoritesButton = document.getElementById(
+  "favoritesButton",
+) as HTMLButtonElement;
+const downloadsButton = document.getElementById(
+  "downloadsButton",
+) as HTMLButtonElement;
+const extensionsButton = document.getElementById(
+  "extensionsButton",
+) as HTMLButtonElement;
 const appMenuButton = document.getElementById(
   "appMenuButton",
+) as HTMLButtonElement;
+const minimizeWindowButton = document.getElementById(
+  "minimizeWindowButton",
+) as HTMLButtonElement;
+const maximizeWindowButton = document.getElementById(
+  "maximizeWindowButton",
+) as HTMLButtonElement;
+const closeWindowButton = document.getElementById(
+  "closeWindowButton",
 ) as HTMLButtonElement;
 
 let currentState: DockedShellStateSnapshot = {
   tabs: [],
   activeTabId: null,
+  canRestoreClosedTab: false,
   devtoolsVisible: false,
   dockPosition: "bottom",
+  theme: {
+    source: "system",
+    resolved: "light",
+  },
+  toolbarPreferences: {
+    home: {
+      visible: true,
+    },
+    restoreClosedTab: {
+      visible: true,
+      placement: "right",
+    },
+    favorites: {
+      visible: true,
+      placement: "right",
+    },
+    downloads: {
+      visible: true,
+    },
+    extensions: {
+      visible: true,
+    },
+  },
+  windowState: {
+    isMaximized: false,
+  },
   runtimeInfo: {
     environmentLabel: "环境检测中",
     gpuMode: "hardware",
@@ -45,6 +102,11 @@ let currentState: DockedShellStateSnapshot = {
 let isEditingUrl = false;
 let lastAppliedTabId: string | null = null;
 let visibleTabStart = 0;
+
+function applyTheme() {
+  document.documentElement.dataset.theme = currentState.theme.resolved;
+  document.documentElement.dataset.themeSource = currentState.theme.source;
+}
 
 function normalizeUrl(value: string) {
   const input = value.trim();
@@ -64,19 +126,6 @@ function getActiveTab() {
   return (
     currentState.tabs.find((tab) => tab.id === currentState.activeTabId) ?? null
   );
-}
-
-function getDisplayHost(url: string) {
-  if (/^chrome:\/\//i.test(url)) {
-    return url;
-  }
-
-  try {
-    const parsed = new URL(url);
-    return parsed.host || parsed.protocol.replace(":", "");
-  } catch {
-    return url || "当前标签";
-  }
 }
 
 function clamp(value: number, min: number, max: number) {
@@ -172,20 +221,27 @@ function getVisibleTabsLayout() {
 function updateStatus() {
   const tab = getActiveTab();
   if (!tab) {
-    statusText.textContent = "无活动标签";
+    statusText.textContent = "";
+    statusStack.classList.add("hidden");
     statusText.classList.remove("loading");
     return;
   }
 
   if (tab.isLoading) {
-    statusText.textContent = `${getDisplayHost(tab.url)} · 加载中...`;
+    statusText.textContent = "加载中…";
+    statusStack.classList.remove("hidden");
     statusText.classList.add("loading");
     return;
   }
 
-  statusText.textContent = currentState.devtoolsVisible
-    ? `${getDisplayHost(tab.url)} · DevTools ${currentState.dockPosition}`
-    : `${getDisplayHost(tab.url)} · ${currentState.tabs.length} 个标签`;
+  if (currentState.devtoolsVisible) {
+    statusText.textContent = `开发者工具 · ${currentState.dockPosition}`;
+    statusStack.classList.remove("hidden");
+  } else {
+    statusText.textContent = "";
+    statusStack.classList.add("hidden");
+  }
+
   statusText.classList.remove("loading");
 }
 
@@ -193,7 +249,64 @@ function updateNavigationButtons() {
   const tab = getActiveTab();
   backButton.disabled = !tab?.canGoBack;
   forwardButton.disabled = !tab?.canGoForward;
+  homeButton.disabled = !tab;
   reloadButton.disabled = !tab;
+  restoreTabButton.disabled = !currentState.canRestoreClosedTab;
+}
+
+function updateWindowControls() {
+  maximizeWindowButton.textContent = currentState.windowState.isMaximized
+    ? "❐"
+    : "□";
+  maximizeWindowButton.title = currentState.windowState.isMaximized
+    ? "还原"
+    : "最大化";
+}
+
+function toggleToolbarButtonVisibility(
+  button: HTMLButtonElement,
+  visible: boolean,
+) {
+  button.hidden = !visible;
+}
+
+function renderToolbarPreferences() {
+  const preferences = currentState.toolbarPreferences;
+
+  toggleToolbarButtonVisibility(homeButton, preferences.home.visible);
+  toggleToolbarButtonVisibility(downloadsButton, preferences.downloads.visible);
+  toggleToolbarButtonVisibility(
+    extensionsButton,
+    preferences.extensions.visible,
+  );
+
+  const leftButtons: HTMLButtonElement[] = [];
+  const rightButtons: HTMLButtonElement[] = [];
+
+  if (preferences.restoreClosedTab.visible) {
+    (preferences.restoreClosedTab.placement === "left"
+      ? leftButtons
+      : rightButtons
+    ).push(restoreTabButton);
+  }
+
+  if (preferences.favorites.visible) {
+    (preferences.favorites.placement === "left"
+      ? leftButtons
+      : rightButtons
+    ).push(favoritesButton);
+  }
+
+  if (preferences.downloads.visible) {
+    rightButtons.push(downloadsButton);
+  }
+
+  if (preferences.extensions.visible) {
+    rightButtons.push(extensionsButton);
+  }
+
+  leftToolbarActions.replaceChildren(...leftButtons);
+  rightToolbarActions.replaceChildren(...rightButtons);
 }
 
 function createTabElement(tab: DockedShellTabSnapshot, tabWidth: number) {
@@ -246,21 +359,46 @@ function applyState(state: DockedShellStateSnapshot | null) {
     lastAppliedTabId = activeTab?.id || null;
   }
 
+  applyTheme();
+  renderToolbarPreferences();
   renderTabs();
   updateNavigationButtons();
   updateStatus();
+  updateWindowControls();
+}
+
+function showAnchoredMenu(
+  button: HTMLButtonElement,
+  section: DockedShellMenuSection,
+) {
+  const rect = button.getBoundingClientRect();
+  const anchor: DockedShellMenuAnchor = {
+    x: rect.left + rect.width / 2,
+    y: rect.bottom + 6,
+  };
+
+  void window.dockedShell.showMenu(section, anchor);
+}
+
+function showToolbarButtonContextMenu(
+  button: HTMLButtonElement,
+  buttonId: DockedShellToolbarContextButtonId,
+) {
+  const rect = button.getBoundingClientRect();
+  const anchor: DockedShellMenuAnchor = {
+    x: rect.left + rect.width / 2,
+    y: rect.bottom + 6,
+  };
+
+  void window.dockedShell.showToolbarButtonContextMenu(buttonId, anchor);
 }
 
 addTabButton.addEventListener("click", () => {
   window.dockedShell.newTab("https://example.com/");
 });
 
-goButton.addEventListener("click", () => {
-  const url = normalizeUrl(urlInput.value);
-  if (url) {
-    isEditingUrl = false;
-    window.dockedShell.navigate(url);
-  }
+homeButton.addEventListener("click", () => {
+  window.dockedShell.openHome();
 });
 
 urlInput.addEventListener("keydown", (event) => {
@@ -290,15 +428,42 @@ urlInput.addEventListener("blur", () => {
 backButton.addEventListener("click", () => window.dockedShell.goBack());
 forwardButton.addEventListener("click", () => window.dockedShell.goForward());
 reloadButton.addEventListener("click", () => window.dockedShell.reload());
+restoreTabButton.addEventListener("click", () => {
+  window.dockedShell.restoreClosedTab();
+});
+restoreTabButton.addEventListener("contextmenu", (event) => {
+  event.preventDefault();
+  showToolbarButtonContextMenu(restoreTabButton, "restoreClosedTab");
+});
+favoritesButton.addEventListener("click", () => {
+  showAnchoredMenu(favoritesButton, "favorites");
+});
+favoritesButton.addEventListener("contextmenu", (event) => {
+  event.preventDefault();
+  showToolbarButtonContextMenu(favoritesButton, "favorites");
+});
+downloadsButton.addEventListener("click", () => {
+  showAnchoredMenu(downloadsButton, "downloads");
+});
+extensionsButton.addEventListener("click", () => {
+  isEditingUrl = false;
+  window.dockedShell.navigate("chrome://extensions");
+});
 
 appMenuButton.addEventListener("click", () => {
-  const rect = appMenuButton.getBoundingClientRect();
-  const anchor: DockedShellMenuAnchor = {
-    x: rect.left + rect.width / 2,
-    y: rect.bottom + 6,
-  };
+  showAnchoredMenu(appMenuButton, "app");
+});
 
-  void window.dockedShell.showMenu("app", anchor);
+minimizeWindowButton.addEventListener("click", () => {
+  window.dockedShell.minimizeWindow();
+});
+
+maximizeWindowButton.addEventListener("click", () => {
+  window.dockedShell.toggleMaximizeWindow();
+});
+
+closeWindowButton.addEventListener("click", () => {
+  window.dockedShell.closeWindow();
 });
 
 new ResizeObserver(() => {

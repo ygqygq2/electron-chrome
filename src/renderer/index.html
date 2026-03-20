@@ -13,25 +13,43 @@
           <div id="tabs" class="tabs"></div>
           <button id="addTabButton" class="tab-add" type="button" title="新建标签页">+</button>
         </div>
+
+        <div class="window-controls top-window-controls">
+          <button id="minimizeWindowButton" class="window-control-button" type="button" title="最小化">—</button>
+          <button id="maximizeWindowButton" class="window-control-button" type="button" title="最大化">□</button>
+          <button id="closeWindowButton" class="window-control-button close" type="button" title="关闭">✕</button>
+        </div>
       </div>
 
       <div class="toolbar">
         <div class="nav-group">
-          <button id="backButton" class="nav-button" type="button" title="后退">←</button>
-          <button id="forwardButton" class="nav-button" type="button" title="前进">→</button>
+          <button id="backButton" class="nav-button" type="button" title="后退">‹</button>
+          <button id="forwardButton" class="nav-button" type="button" title="前进">›</button>
           <button id="reloadButton" class="nav-button" type="button" title="刷新">↻</button>
+          <button id="homeButton" class="nav-button" type="button" title="首页">⌂</button>
         </div>
+
+        <div id="leftToolbarActions" class="toolbar-actions toolbar-actions-left"></div>
+
         <div class="address-shell">
-          <span class="address-icon">🔎</span>
+          <span class="address-icon" aria-hidden="true"></span>
           <input id="urlInput" class="url-input" type="text" placeholder="输入网址，例如 https://www.baidu.com" />
         </div>
-        <button id="goButton" class="go-button" type="button">打开</button>
 
-        <div class="status-stack">
-          <div id="statusText" class="status">准备中...</div>
+        <div class="toolbar-end">
+          <div class="status-stack">
+            <div id="statusText" class="status">准备中...</div>
+          </div>
+
+          <div id="rightToolbarActions" class="toolbar-actions toolbar-actions-right">
+            <button id="restoreTabButton" class="toolbar-action-button" type="button" title="重新打开关闭的标签页">↶</button>
+            <button id="favoritesButton" class="toolbar-action-button" type="button" title="收藏夹">☆</button>
+            <button id="downloadsButton" class="toolbar-action-button" type="button" title="下载">⇩</button>
+            <button id="extensionsButton" class="toolbar-action-button" type="button" title="扩展">◧</button>
+          </div>
+
+          <button id="appMenuButton" class="app-menu-button" type="button" title="菜单">☰</button>
         </div>
-
-        <button id="appMenuButton" class="app-menu-button" type="button" title="菜单">☰ 菜单</button>
       </div>
     </div>
     <script type="module" src="./main.ts"></script>

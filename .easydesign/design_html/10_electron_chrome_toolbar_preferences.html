@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>10 工具栏按钮布局与显隐持久化</title>
+    <style>
+      :root {
+        font-family: "Segoe UI", "PingFang SC", sans-serif;
+        --top: #eff3f8;
+        --bottom: #e7edf4;
+        --line: #cad4df;
+        --text: #1f2328;
+        --muted: #6b7785;
+      }
+      * { box-sizing: border-box; }
+      body { margin: 0; background: #dce4ee; }
+      .window { width: 1380px; margin: 24px auto; border: 1px solid var(--line); border-radius: 14px; overflow: hidden; background: #fff; }
+      .shell { padding: 8px 10px 7px; background: linear-gradient(180deg, var(--top) 0%, var(--bottom) 100%); border-bottom: 1px solid var(--line); }
+      .tabbar, .toolbar, .group, .actions, .window-controls { display: flex; align-items: center; }
+      .tabbar { gap: 8px; margin-bottom: 6px; }
+      .toolbar { gap: 8px; min-height: 38px; }
+      .tabs-host { display: flex; flex: 1; gap: 4px; }
+      .tab { width: 176px; height: 32px; padding: 0 14px; display: inline-flex; align-items: center; border: 1px solid var(--line); border-bottom: none; border-radius: 10px 10px 0 0; background: linear-gradient(180deg, #fff 0%, #dbe3ec 100%); }
+      .btn { display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; background: linear-gradient(180deg, #fff 0%, #f1f5f9 100%); border: 1px solid var(--line); border-radius: 9px; }
+      .address { flex: 1; height: 34px; border: 1px solid var(--line); border-radius: 999px; background: #fff; }
+      .group, .actions, .window-controls { gap: 6px; }
+      .actions { margin-left: auto; }
+      .status { color: var(--muted); font-size: 12px; margin-right: 4px; }
+      .menu { position: absolute; top: 84px; left: 710px; width: 320px; background: #fff; border: 1px solid #d8dee8; box-shadow: 0 12px 30px rgba(31, 45, 61, 0.12); }
+      .menu-item { display: flex; justify-content: space-between; padding: 14px 18px; font-size: 14px; color: var(--text); }
+      .menu-item + .menu-item { border-top: 1px solid #eef2f6; }
+    </style>
+  </head>
+  <body>
+    <div class="window">
+      <div class="shell">
+        <div class="tabbar">
+          <div class="tabs-host">
+            <div class="tab">设置</div>
+            <button class="btn">+</button>
+          </div>
+          <div class="window-controls">
+            <button class="btn">—</button>
+            <button class="btn">□</button>
+            <button class="btn">✕</button>
+          </div>
+        </div>
+        <div class="toolbar">
+          <div class="group">
+            <button class="btn">‹</button>
+            <button class="btn">›</button>
+            <button class="btn">↻</button>
+            <button class="btn">⌂</button>
+            <button class="btn">↶</button>
+          </div>
+          <div class="address"></div>
+          <div class="actions">
+            <div class="status">www.example.com</div>
+            <button class="btn">☆</button>
+            <button class="btn">⇩</button>
+            <button class="btn">◧</button>
+            <button class="btn">☰</button>
+          </div>
+        </div>
+      </div>
+      <div class="menu">
+        <div class="menu-item"><span>放在左边</span><span>✓</span></div>
+        <div class="menu-item"><span>放在右边</span><span></span></div>
+        <div class="menu-item"><span>显示主页按钮</span><span>✓</span></div>
+        <div class="menu-item"><span>显示恢复关闭标签按钮</span><span>✓</span></div>
+        <div class="menu-item"><span>显示收藏夹按钮</span><span>✓</span></div>
+        <div class="menu-item"><span>显示下载按钮</span><span>✓</span></div>
+        <div class="menu-item"><span>显示扩展按钮</span><span>✓</span></div>
+      </div>
+    </div>
+  </body>
+</html>

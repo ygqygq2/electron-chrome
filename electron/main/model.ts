@@ -102,6 +102,7 @@ export interface TabSnapshot {
   id: string;
   title: string;
   url: string;
+  iconUrl?: string;
   isLoading: boolean;
   canGoBack: boolean;
   canGoForward: boolean;
@@ -115,6 +116,7 @@ export interface BrowserHistoryEntry {
 }
 
 export interface BrowserTab extends TabSnapshot {
+  iconRequestVersion: number;
   pageView: WebContentsView;
 }
 

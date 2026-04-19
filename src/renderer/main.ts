@@ -61,35 +61,37 @@ const closeWindowButton = document.getElementById(
 
 const ICON_MARKUP: Record<string, string> = {
   "icon-add":
-    '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 4v8M4 8h8"/></svg>',
+    '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14"/><path d="M5 12h14"/></svg>',
   "icon-back":
-    '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="m9.75 3.75-4.75 4.25 4.75 4.25"/></svg>',
+    '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>',
   "icon-forward":
-    '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="m6.25 3.75 4.75 4.25-4.75 4.25"/></svg>',
+    '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg>',
   "icon-reload":
-    '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M12 7.2A4.3 4.3 0 1 1 8 3.7c1.05 0 2.01.36 2.78.97"/><path d="M10.2 3.1H13v2.78"/></svg>',
+    '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12a9 9 0 0 1-15.5 6.36L3 16"/><path d="M3 21v-5h5"/><path d="M3 12a9 9 0 0 1 15.5-6.36L21 8"/><path d="M16 3h5v5"/></svg>',
   "icon-home":
-    '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3.1 7.1 8 3.35l4.9 3.75"/><path d="M4.6 6.45V12.4h6.8V6.45"/><path d="M6.8 12.4V9.4h2.4v3"/></svg>',
+    '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/><path d="M9.5 21v-6h5v6"/></svg>',
   "icon-restore-tab":
-    '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M12 7.35A4.35 4.35 0 1 1 8 3.7c1.02 0 1.96.34 2.73.93"/><path d="M10.05 3.05H13v2.95"/></svg>',
+    '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 14-5-5 5-5"/><path d="M20 20a8 8 0 0 0-8-8H4"/></svg>',
   "icon-favorites":
-    '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="m8 2.95 1.42 2.9 3.18.46-2.3 2.23.54 3.13L8 10.08l-2.84 1.59.54-3.13-2.3-2.23 3.18-.46z"/></svg>',
+    '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3.7 2.53 5.13 5.67.82-4.1 4 .97 5.65L12 16.43 6.93 19.3l.97-5.65-4.1-4 5.67-.82z"/></svg>',
   "icon-downloads":
-    '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 3.6v5.95"/><path d="m5.55 7.95 2.45 2.65 2.45-2.65"/><path d="M3.8 12.35h8.4"/></svg>',
+    '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11"/><path d="m7 11 5 5 5-5"/><path d="M5 20h14"/></svg>',
   "icon-extensions":
-    '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3.75 3.75h3.1v3.1h-3.1zM9.15 3.75h3.1v3.1h-3.1zM3.75 9.15h3.1v3.1h-3.1zM9.15 9.15h3.1v3.1h-3.1z"/></svg>',
+    '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4.75 4.75h5.5v5.5h-5.5z"/><path d="M13.75 4.75h5.5v5.5h-5.5z"/><path d="M4.75 13.75h5.5v5.5h-5.5z"/><path d="M13.75 13.75h5.5v5.5h-5.5z"/></svg>',
   "icon-menu":
-    '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3.5 4.6h9M3.5 8h9M3.5 11.4h9"/></svg>',
+    '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16"/><path d="M4 12h16"/><path d="M4 18h16"/></svg>',
   "icon-minimize":
-    '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M4 8.55h8"/></svg>',
+    '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14"/></svg>',
   "icon-maximize":
-    '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M4 4h8v8H4z"/></svg>',
+    '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 5h14v14H5z"/></svg>',
   "icon-restore-window":
-    '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M5.1 4h6.9v6.9H5.1z"/><path d="M4 5.1V12h6.9"/></svg>',
+    '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 8h11v11H8z"/><path d="M5 16V5h11"/></svg>',
   "icon-close":
-    '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="m4.4 4.4 7.2 7.2M11.6 4.4l-7.2 7.2"/></svg>',
+    '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12"/><path d="M18 6 6 18"/></svg>',
   "icon-close-small":
-    '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="m5 5 6 6M11 5l-6 6"/></svg>',
+    '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m7 7 10 10"/><path d="M17 7 7 17"/></svg>',
+  "icon-globe":
+    '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18Z"/><path d="M3 12h18"/><path d="M12 3a14 14 0 0 1 0 18"/><path d="M12 3a14 14 0 0 0 0 18"/></svg>',
 };
 
 function ensureButtonIcon(button: HTMLButtonElement, iconClass: string) {
@@ -105,6 +107,42 @@ function ensureButtonIcon(button: HTMLButtonElement, iconClass: string) {
   iconEl.className = `toolbar-icon ${iconClass}`;
   iconEl.innerHTML = ICON_MARKUP[iconClass] ?? "";
   return iconEl;
+}
+
+function createTabIconElement(tab: DockedShellTabSnapshot) {
+  const iconWrap = document.createElement("span");
+  iconWrap.className = "tab-icon";
+
+  const fallbackIcon = document.createElement("span");
+  fallbackIcon.className = "tab-icon-fallback";
+  fallbackIcon.innerHTML = ICON_MARKUP["icon-globe"] ?? "";
+
+  const resolvedUrl = tab.iconUrl;
+
+  if (!resolvedUrl) {
+    iconWrap.append(fallbackIcon);
+    return iconWrap;
+  }
+
+  const iconImg = document.createElement("img");
+  iconImg.className = "tab-icon-image";
+  iconImg.alt = `${tab.title || tab.url || "标签页"} 图标`;
+  iconImg.decoding = "async";
+  iconImg.loading = "eager";
+  iconImg.src = resolvedUrl;
+
+  const showFallback = () => {
+    if (!fallbackIcon.isConnected) {
+      iconWrap.replaceChildren(fallbackIcon);
+    }
+  };
+
+  iconImg.addEventListener("error", () => {
+    showFallback();
+  });
+
+  iconWrap.append(iconImg);
+  return iconWrap;
 }
 
 let currentState: DockedShellStateSnapshot = {
@@ -376,8 +414,7 @@ function createTabElement(tab: DockedShellTabSnapshot, tabWidth: number) {
   tabEl.style.width = `${tabWidth}px`;
   tabEl.title = tab.title || tab.url || "新标签页";
 
-  const metaEl = document.createElement("div");
-  metaEl.className = "tab-meta";
+  const iconEl = createTabIconElement(tab);
 
   const titleEl = document.createElement("div");
   titleEl.className = "tab-title";
@@ -398,7 +435,7 @@ function createTabElement(tab: DockedShellTabSnapshot, tabWidth: number) {
     window.dockedShell.closeTab(tab.id);
   });
 
-  tabEl.append(metaEl, titleEl, closeEl);
+  tabEl.append(iconEl, titleEl, closeEl);
   tabEl.addEventListener("click", () => window.dockedShell.activateTab(tab.id));
   return tabEl;
 }

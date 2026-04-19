@@ -1,5 +1,5 @@
 :root {
-  --shell-height: 92px;
+  --shell-height: 100px;
   --radius-xs: 4px;
   --radius-sm: 7px;
   --radius-md: 12px;
@@ -101,13 +101,13 @@ body {
 .shell {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 0;
   height: var(--shell-height);
-  padding: 8px 8px 6px;
+  padding: 0 8px 6px;
   background: linear-gradient(
     180deg,
-    var(--chrome-strip-bg) 0 42px,
-    var(--shell-toolbar-bg) 42px 100%
+    var(--chrome-strip-bg) 0 40px,
+    var(--shell-toolbar-bg) 40px 100%
   );
   border-bottom: 1px solid var(--shell-divider-strong);
   box-shadow:
@@ -124,7 +124,7 @@ body {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  height: 34px;
+  height: 36px;
   color: var(--text-normal);
   cursor: pointer;
   background: transparent;
@@ -141,14 +141,18 @@ body {
 
 .toolbar-icon {
   display: block;
-  width: 16px;
-  height: 16px;
+  width: 20px;
+  height: 20px;
   pointer-events: none;
 }
 
 .icon-close-small {
-  width: 12px;
-  height: 12px;
+  width: 16px;
+  height: 16px;
+}
+
+.icon-close-small path {
+  stroke-width: 2.45;
 }
 
 .toolbar-icon svg {
@@ -160,7 +164,7 @@ body {
 .toolbar-icon path {
   fill: none;
   stroke: currentcolor;
-  stroke-width: 1.75;
+  stroke-width: 2.2;
   stroke-linecap: round;
   stroke-linejoin: round;
 }
@@ -180,7 +184,7 @@ body {
 .app-menu-button,
 .window-control-button,
 .tab-add {
-  width: 34px;
+  width: 36px;
   padding: 0;
 }
 
@@ -195,9 +199,10 @@ body {
 
 .tabbar {
   display: flex;
-  gap: 8px;
+  gap: 6px;
   align-items: center;
-  min-height: 36px;
+  min-height: 40px;
+  padding-top: 0;
   padding-right: 2px;
   border-bottom: 1px solid var(--chrome-strip-border);
 }
@@ -209,12 +214,13 @@ body {
   align-items: stretch;
   min-width: 0;
   overflow: hidden;
+  padding-left: 0;
 }
 
 .top-window-controls {
   flex: 0 0 auto;
   gap: 0;
-  padding-left: 4px;
+  padding-left: 2px;
   margin-left: auto;
   -webkit-app-region: no-drag;
 }
@@ -231,9 +237,9 @@ body {
 .tab-divider {
   flex: 0 0 auto;
   width: 1px;
-  margin: 5px 0;
+  margin: 7px 0 6px;
   background: var(--chrome-tab-divider);
-  opacity: 0.9;
+  opacity: 0.72;
 }
 
 .tab-divider.hidden {
@@ -244,34 +250,43 @@ body {
   position: relative;
   display: inline-flex;
   flex: 0 0 auto;
-  gap: 8px;
+  gap: 10px;
   align-items: center;
   min-width: 0;
-  max-width: 182px;
-  height: 36px;
-  padding: 8px 13px 7px;
-  margin-top: 1px;
+  max-width: 196px;
+  height: 40px;
+  padding: 0 6px 0 10px;
+  margin-top: 0;
   color: var(--chrome-tab-idle-fg);
   cursor: pointer;
   user-select: none;
   background: transparent;
-  border: 1px solid transparent;
-  border-bottom-color: transparent;
+  border: 0;
   border-radius: 10px 10px 0 0;
   box-shadow: none;
+  overflow: hidden;
   -webkit-app-region: no-drag;
 }
 
 .tab.active {
   color: var(--chrome-tab-active-fg);
   background: var(--chrome-tab-active-bg);
-  border-color: var(--chrome-strip-border);
-  border-bottom-color: var(--chrome-tab-active-bg);
-  box-shadow: inset 0 1px 0 rgb(255 255 255 / 80%);
+  box-shadow:
+    0 1px 0 rgb(255 255 255 / 58%),
+    inset 0 1px 0 rgb(255 255 255 / 74%);
+}
+
+.tab.active::after {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  height: 1px;
+  content: "";
+  background: var(--chrome-tab-active-bg);
 }
 
 html[data-theme="dark"] .tab.active {
-  border-bottom-color: var(--chrome-tab-active-bg);
   box-shadow: inset 0 1px 0 rgb(255 255 255 / 4%);
 }
 
@@ -283,12 +298,60 @@ html[data-theme="dark"] .tab:not(.active):hover {
   background: var(--chrome-tab-hover-bg);
 }
 
+.tab-icon {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  overflow: hidden;
+  border-radius: 4px;
+}
+
+.tab-icon-image {
+  display: block;
+  width: 16px;
+  height: 16px;
+  object-fit: contain;
+}
+
+.tab-icon-fallback {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  color: var(--chrome-tab-idle-fg);
+  background: color-mix(in srgb, var(--surface-muted) 78%, transparent);
+  border-radius: 4px;
+}
+
+.tab-icon-fallback svg {
+  display: block;
+  width: 14px;
+  height: 14px;
+}
+
+.tab-icon-fallback path {
+  fill: none;
+  stroke: currentcolor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.tab.active .tab-icon-fallback {
+  color: var(--chrome-tab-active-fg);
+}
+
 .tab-title {
   flex: 1;
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
-  font-size: 13px;
+  font-size: 14px;
+  font-weight: 500;
   white-space: nowrap;
 }
 
@@ -296,19 +359,24 @@ html[data-theme="dark"] .tab:not(.active):hover {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 22px;
-  height: 22px;
-  color: var(--chrome-tab-close-fg);
+  width: 30px;
+  height: 30px;
+  margin-right: 1px;
+  color: color-mix(in srgb, var(--chrome-tab-close-fg) 88%, var(--text-strong));
   cursor: pointer;
   background: transparent;
   border: 0;
-  border-radius: 999px;
-  opacity: 0.84;
+  border-radius: var(--radius-xs);
+  opacity: 0.96;
   transition:
     background-color 140ms ease,
     color 140ms ease,
     opacity 140ms ease;
   -webkit-app-region: no-drag;
+}
+
+.tab.active .tab-close {
+  color: color-mix(in srgb, var(--chrome-tab-close-hover-fg) 78%, var(--text-strong));
 }
 
 .tab-close:hover {
@@ -325,20 +393,22 @@ html[data-theme="dark"] .tab-close:hover {
 .tab-add {
   flex: 0 0 auto;
   gap: 6px;
-  margin-left: 4px;
+  margin-left: 2px;
+  border-radius: 10px 10px 0 0;
 }
 
 .tab-add .toolbar-icon {
-  width: 17px;
-  height: 17px;
+  width: 21px;
+  height: 21px;
 }
 
 .toolbar {
   display: flex;
   gap: 8px;
   align-items: center;
-  min-height: 36px;
+  min-height: 40px;
   background: var(--shell-toolbar-bg);
+  padding-top: 1px;
 }
 
 .nav-group {
@@ -359,13 +429,13 @@ html[data-theme="dark"] .tab-close:hover {
 .nav-button .toolbar-icon,
 .toolbar-action-button .toolbar-icon,
 .app-menu-button .toolbar-icon {
-  width: 16px;
-  height: 16px;
+  width: 20px;
+  height: 20px;
 }
 
 .window-control-button .toolbar-icon {
-  width: 13px;
-  height: 13px;
+  width: 16px;
+  height: 16px;
 }
 
 .address-shell {
@@ -374,8 +444,8 @@ html[data-theme="dark"] .tab-close:hover {
   gap: 7px;
   align-items: center;
   min-width: 0;
-  height: 36px;
-  padding: 0 13px;
+  height: 38px;
+  padding: 0 14px;
   background: var(--shell-toolbar-input-bg);
   border: 1px solid rgb(60 64 67 / 7%);
   border-radius: 9px;
@@ -390,19 +460,19 @@ html[data-theme="dark"] .tab-close:hover {
 .address-icon {
   position: relative;
   flex: 0 0 auto;
-  width: 13px;
-  height: 13px;
-  border: 1.55px solid #97a0ab;
+  width: 16px;
+  height: 16px;
+  border: 1.9px solid #97a0ab;
   border-radius: 999px;
-  opacity: 0.9;
+  opacity: 0.96;
 }
 
 .address-icon::after {
   position: absolute;
-  right: -3px;
+  right: -4px;
   bottom: -3px;
-  width: 5px;
-  height: 1.55px;
+  width: 7px;
+  height: 1.9px;
   content: "";
   background: #97a0ab;
   border-radius: 999px;
@@ -421,7 +491,7 @@ html[data-theme="dark"] .address-icon::after {
   min-width: 0;
   height: 100%;
   padding: 0;
-  font-size: 14px;
+  font-size: 15px;
   color: var(--text-strong);
   outline: none;
   background: transparent;
@@ -528,8 +598,8 @@ html[data-theme="dark"] .tab-add {
 }
 
 .window-control-button.close .toolbar-icon {
-  width: 12px;
-  height: 12px;
+  width: 14px;
+  height: 14px;
 }
 
 html[data-theme="dark"] .window-control-button.close:hover {
@@ -537,21 +607,8 @@ html[data-theme="dark"] .window-control-button.close:hover {
   background: #e81123;
 }
 
-.tab-meta {
-  flex: 0 0 auto;
-  width: 8px;
-  height: 8px;
-  background: #9aa6b2;
-  border-radius: 999px;
-  box-shadow: none;
-}
-
-.tab.active .tab-meta {
-  background: var(--accent-2);
-}
-
-.tab.loading .tab-meta {
-  background: #f2cc60;
+.tab.loading .tab-icon {
+  box-shadow: 0 0 0 2px rgb(242 204 96 / 22%);
 }
 
 @media (width <= 1320px) {
@@ -580,6 +637,6 @@ html[data-theme="dark"] .window-control-button.close:hover {
   .app-menu-button,
   .nav-button,
   .tab-add {
-    width: 31px;
+    width: 34px;
   }
 }

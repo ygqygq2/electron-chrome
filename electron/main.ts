@@ -56,6 +56,7 @@ import {
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const DESKTOP_CHROME_USER_AGENT = buildDesktopChromeUserAgent();
 const dockedWindowStateById = new Map<number, BrowserShellState>();
+const FAVICON_ACCEPT_HEADER = "image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8";
 
 function persistBrowserHistory() {
   browserHistory = browserHistory.slice(0, MAX_HISTORY_ENTRIES);
@@ -212,6 +213,7 @@ function openTabUrl(tab: BrowserTab, url: string, state: BrowserShellState) {
 
   tab.url = nextUrl;
   if (isInternalPageUrl(nextUrl)) {
+    tab.iconUrl = undefined;
     tab.title = isSettingsUrl(nextUrl)
       ? `设置 · ${(SETTINGS_SECTIONS.find((section) => section.id === getSettingsSectionFromUrl(nextUrl))?.label ?? "基础偏好")}`
       : isDownloadsUrl(nextUrl)
@@ -243,6 +245,7 @@ function getStateSnapshot(state: BrowserShellState) {
       id: tab.id,
       title: tab.title,
       url: tab.url,
+      iconUrl: tab.iconUrl,
       isLoading: tab.isLoading,
       canGoBack: tab.canGoBack,
       canGoForward: tab.canGoForward,
@@ -293,6 +296,114 @@ function syncTabNavigationState(tab: BrowserTab) {
   const { webContents } = tab.pageView;
   tab.canGoBack = webContents.navigationHistory.canGoBack();
   tab.canGoForward = webContents.navigationHistory.canGoForward();
+}
+
+function resolveFaviconByUrl(url: string) {
+  try {
+    const parsedUrl = new URL(url);
+
+    if (!/^https?:$/i.test(parsedUrl.protocol)) {
+      return undefined;
+    }
+
+    return new URL("/favicon.ico", parsedUrl.origin).toString();
+  } catch {
+    return undefined;
+  }
+}
+
+function resolveAbsoluteFaviconUrl(iconUrl: string, pageUrl: string) {
+  try {
+    const resolvedUrl = new URL(iconUrl, pageUrl);
+
+    return /^https?:$/i.test(resolvedUrl.protocol) ? resolvedUrl.toString() : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+function resolveFaviconCandidates(pageUrl: string, iconUrls: string[] = []) {
+  const candidates = [
+    ...iconUrls
+      .map((iconUrl) => resolveAbsoluteFaviconUrl(iconUrl, pageUrl))
+      .filter((iconUrl): iconUrl is string => Boolean(iconUrl)),
+    resolveFaviconByUrl(pageUrl),
+  ];
+
+  return candidates.filter(
+    (iconUrl, index): iconUrl is string => Boolean(iconUrl) && candidates.indexOf(iconUrl) === index,
+  );
+}
+
+async function fetchFaviconAsDataUrl(iconUrl: string) {
+  try {
+    const response = await fetch(iconUrl, {
+      headers: {
+        Accept: FAVICON_ACCEPT_HEADER,
+        "User-Agent": DESKTOP_CHROME_USER_AGENT,
+      },
+    });
+
+    if (!response.ok) {
+      return undefined;
+    }
+
+    const contentTypeHeader = response.headers.get("content-type")?.split(";")[0]?.trim();
+    const contentType = contentTypeHeader?.startsWith("image/")
+      ? contentTypeHeader
+      : "image/x-icon";
+    const buffer = Buffer.from(await response.arrayBuffer());
+
+    if (buffer.length === 0) {
+      return undefined;
+    }
+
+    return `data:${contentType};base64,${buffer.toString("base64")}`;
+  } catch {
+    return undefined;
+  }
+}
+
+function queueTabFaviconUpdate(
+  win: BrowserWindow,
+  state: BrowserShellState,
+  tab: BrowserTab,
+  pageUrl: string,
+  iconUrls: string[] = [],
+) {
+  const faviconCandidates = resolveFaviconCandidates(pageUrl, iconUrls);
+  const requestVersion = ++tab.iconRequestVersion;
+
+  if (faviconCandidates.length === 0) {
+    tab.iconUrl = undefined;
+    notifyStateChanged(win, state);
+    return;
+  }
+
+  void (async () => {
+    for (const faviconUrl of faviconCandidates) {
+      const faviconDataUrl = await fetchFaviconAsDataUrl(faviconUrl);
+
+      if (tab.iconRequestVersion !== requestVersion) {
+        return;
+      }
+
+      if (!faviconDataUrl) {
+        continue;
+      }
+
+      tab.iconUrl = faviconDataUrl;
+      notifyStateChanged(win, state);
+      return;
+    }
+
+    if (tab.iconRequestVersion !== requestVersion) {
+      return;
+    }
+
+    tab.iconUrl = undefined;
+    notifyStateChanged(win, state);
+  })();
 }
 
 function notifyStateChanged(win: BrowserWindow, state: BrowserShellState) {
@@ -886,6 +997,8 @@ function createTab(
     id: createTabId(),
     title: "新标签页",
     url: initialUrl,
+    iconUrl: undefined,
+    iconRequestVersion: 0,
     isLoading: false,
     canGoBack: false,
     canGoForward: false,
@@ -917,6 +1030,10 @@ function createTab(
     notifyStateChanged(win, state);
   });
 
+  pageView.webContents.on("page-favicon-updated", (_event, favicons) => {
+    queueTabFaviconUpdate(win, state, tab, tab.url, favicons);
+  });
+
   pageView.webContents.on("did-start-loading", () => {
     tab.isLoading = true;
     notifyStateChanged(win, state);
@@ -935,6 +1052,7 @@ function createTab(
   pageView.webContents.on("did-navigate", (_event, url) => {
     if (!(isInternalPageUrl(tab.url) && isInternalRenderedUrl(url))) {
       tab.url = url;
+      queueTabFaviconUpdate(win, state, tab, url);
     }
     syncTabNavigationState(tab);
     notifyStateChanged(win, state);
@@ -943,6 +1061,7 @@ function createTab(
   pageView.webContents.on("did-navigate-in-page", (_event, url) => {
     if (!(isInternalPageUrl(tab.url) && isInternalRenderedUrl(url))) {
       tab.url = url;
+      queueTabFaviconUpdate(win, state, tab, url);
     }
     syncTabNavigationState(tab);
     notifyStateChanged(win, state);
@@ -954,6 +1073,7 @@ function createTab(
       tab.isLoading = false;
       tab.title = `加载失败 (${errorCode})`;
       tab.url = validatedURL || tab.url;
+      queueTabFaviconUpdate(win, state, tab, tab.url);
       notifyStateChanged(win, state);
       console.warn("[electron-chrome] load failed", {
         errorCode,

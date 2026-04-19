@@ -52,6 +52,7 @@ export interface DockedShellTabSnapshot {
   id: string;
   title: string;
   url: string;
+  iconUrl?: string;
   isLoading: boolean;
   canGoBack: boolean;
   canGoForward: boolean;

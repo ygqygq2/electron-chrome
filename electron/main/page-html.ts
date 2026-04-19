@@ -192,7 +192,7 @@ export function createHomePageHtml(theme: ThemeSnapshot) {
       }
       .sites {
         display: grid;
-        grid-template-columns: repeat(5, minmax(0, 84px));
+        grid-template-columns: repeat(5, minmax(0, 92px));
         gap: 18px 24px;
       }
       .site {
@@ -210,9 +210,9 @@ export function createHomePageHtml(theme: ThemeSnapshot) {
       .site-icon {
         display: grid;
         place-items: center;
-        width: 56px;
-        height: 56px;
-        font-size: 23px;
+        width: 60px;
+        height: 60px;
+        font-size: 25px;
         font-weight: 700;
         background: var(--card);
         border: 1px solid rgba(255,255,255,0.12);
@@ -232,8 +232,8 @@ export function createHomePageHtml(theme: ThemeSnapshot) {
         margin-bottom: 28px;
       }
       .logo-wrap svg {
-        width: 72px;
-        height: 72px;
+        width: 80px;
+        height: 80px;
         filter: drop-shadow(0 6px 18px rgba(0,0,0,0.22));
       }
       .logo-name {
@@ -245,11 +245,11 @@ export function createHomePageHtml(theme: ThemeSnapshot) {
       }
       @media (width <= 860px) {
         .page { padding: 18px; }
-        .sites { grid-template-columns: repeat(4, minmax(0, 84px)); gap: 16px; }
+        .sites { grid-template-columns: repeat(4, minmax(0, 92px)); gap: 16px; }
       }
       @media (width <= 640px) {
         .hero { justify-content: flex-start; padding-top: 56px; }
-        .sites { grid-template-columns: repeat(3, minmax(0, 84px)); }
+        .sites { grid-template-columns: repeat(3, minmax(0, 92px)); }
         .search-form { width: 100%; }
       }
     </style>

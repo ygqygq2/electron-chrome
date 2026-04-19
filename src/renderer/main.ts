@@ -8,9 +8,9 @@ import type {
   DockedShellToolbarContextButtonId,
 } from "../../electron/preload";
 
-const TAB_PREFERRED_WIDTH = 176;
-const TAB_MIN_WIDTH = 100;
-const TAB_GAP = 4;
+const TAB_PREFERRED_WIDTH = 182;
+const TAB_MIN_WIDTH = 108;
+const TAB_GAP = 0;
 
 const tabsHost = document.getElementById("tabsHost") as HTMLDivElement;
 const tabsEl = document.getElementById("tabs") as HTMLDivElement;
@@ -58,6 +58,54 @@ const maximizeWindowButton = document.getElementById(
 const closeWindowButton = document.getElementById(
   "closeWindowButton",
 ) as HTMLButtonElement;
+
+const ICON_MARKUP: Record<string, string> = {
+  "icon-add":
+    '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 4v8M4 8h8"/></svg>',
+  "icon-back":
+    '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="m9.75 3.75-4.75 4.25 4.75 4.25"/></svg>',
+  "icon-forward":
+    '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="m6.25 3.75 4.75 4.25-4.75 4.25"/></svg>',
+  "icon-reload":
+    '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M12 7.2A4.3 4.3 0 1 1 8 3.7c1.05 0 2.01.36 2.78.97"/><path d="M10.2 3.1H13v2.78"/></svg>',
+  "icon-home":
+    '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3.1 7.1 8 3.35l4.9 3.75"/><path d="M4.6 6.45V12.4h6.8V6.45"/><path d="M6.8 12.4V9.4h2.4v3"/></svg>',
+  "icon-restore-tab":
+    '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M12 7.35A4.35 4.35 0 1 1 8 3.7c1.02 0 1.96.34 2.73.93"/><path d="M10.05 3.05H13v2.95"/></svg>',
+  "icon-favorites":
+    '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="m8 2.95 1.42 2.9 3.18.46-2.3 2.23.54 3.13L8 10.08l-2.84 1.59.54-3.13-2.3-2.23 3.18-.46z"/></svg>',
+  "icon-downloads":
+    '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 3.6v5.95"/><path d="m5.55 7.95 2.45 2.65 2.45-2.65"/><path d="M3.8 12.35h8.4"/></svg>',
+  "icon-extensions":
+    '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3.75 3.75h3.1v3.1h-3.1zM9.15 3.75h3.1v3.1h-3.1zM3.75 9.15h3.1v3.1h-3.1zM9.15 9.15h3.1v3.1h-3.1z"/></svg>',
+  "icon-menu":
+    '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3.5 4.6h9M3.5 8h9M3.5 11.4h9"/></svg>',
+  "icon-minimize":
+    '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M4 8.55h8"/></svg>',
+  "icon-maximize":
+    '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M4 4h8v8H4z"/></svg>',
+  "icon-restore-window":
+    '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M5.1 4h6.9v6.9H5.1z"/><path d="M4 5.1V12h6.9"/></svg>',
+  "icon-close":
+    '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="m4.4 4.4 7.2 7.2M11.6 4.4l-7.2 7.2"/></svg>',
+  "icon-close-small":
+    '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="m5 5 6 6M11 5l-6 6"/></svg>',
+};
+
+function ensureButtonIcon(button: HTMLButtonElement, iconClass: string) {
+  let iconEl = button.querySelector(".toolbar-icon") as HTMLSpanElement | null;
+
+  if (!iconEl) {
+    iconEl = document.createElement("span");
+    iconEl.className = "toolbar-icon";
+    iconEl.setAttribute("aria-hidden", "true");
+    button.replaceChildren(iconEl);
+  }
+
+  iconEl.className = `toolbar-icon ${iconClass}`;
+  iconEl.innerHTML = ICON_MARKUP[iconClass] ?? "";
+  return iconEl;
+}
 
 let currentState: DockedShellStateSnapshot = {
   tabs: [],
@@ -255,12 +303,19 @@ function updateNavigationButtons() {
 }
 
 function updateWindowControls() {
-  maximizeWindowButton.textContent = currentState.windowState.isMaximized
-    ? "❐"
-    : "□";
+  ensureButtonIcon(
+    maximizeWindowButton,
+    currentState.windowState.isMaximized
+      ? "icon-restore-window"
+      : "icon-maximize",
+  );
   maximizeWindowButton.title = currentState.windowState.isMaximized
     ? "还原"
     : "最大化";
+  maximizeWindowButton.setAttribute(
+    "aria-label",
+    currentState.windowState.isMaximized ? "还原" : "最大化",
+  );
 }
 
 function toggleToolbarButtonVisibility(
@@ -309,10 +364,17 @@ function renderToolbarPreferences() {
   rightToolbarActions.replaceChildren(...rightButtons);
 }
 
+function createTabDivider(visible: boolean) {
+  const dividerEl = document.createElement("div");
+  dividerEl.className = `tab-divider${visible ? "" : " hidden"}`;
+  return dividerEl;
+}
+
 function createTabElement(tab: DockedShellTabSnapshot, tabWidth: number) {
   const tabEl = document.createElement("div");
   tabEl.className = `tab${tab.id === currentState.activeTabId ? " active" : ""}${tab.isLoading ? " loading" : ""}`;
   tabEl.style.width = `${tabWidth}px`;
+  tabEl.title = tab.title || tab.url || "新标签页";
 
   const metaEl = document.createElement("div");
   metaEl.className = "tab-meta";
@@ -324,8 +386,12 @@ function createTabElement(tab: DockedShellTabSnapshot, tabWidth: number) {
   const closeEl = document.createElement("button");
   closeEl.className = "tab-close";
   closeEl.type = "button";
-  closeEl.textContent = "×";
   closeEl.title = "关闭标签页";
+  closeEl.setAttribute(
+    "aria-label",
+    `关闭 ${tab.title || tab.url || "标签页"}`,
+  );
+  closeEl.append(ensureButtonIcon(closeEl, "icon-close-small"));
   closeEl.disabled = currentState.tabs.length <= 1;
   closeEl.addEventListener("click", (event) => {
     event.stopPropagation();
@@ -339,10 +405,22 @@ function createTabElement(tab: DockedShellTabSnapshot, tabWidth: number) {
 
 function renderTabs() {
   const { visibleTabs, tabWidth } = getVisibleTabsLayout();
+  const children: HTMLElement[] = [];
 
-  tabsEl.replaceChildren(
-    ...visibleTabs.map((tab) => createTabElement(tab, tabWidth)),
-  );
+  visibleTabs.forEach((tab, index) => {
+    if (index > 0) {
+      const previousTab = visibleTabs[index - 1];
+      const shouldShowDivider =
+        previousTab != null &&
+        previousTab.id !== currentState.activeTabId &&
+        tab.id !== currentState.activeTabId;
+      children.push(createTabDivider(shouldShowDivider));
+    }
+
+    children.push(createTabElement(tab, tabWidth));
+  });
+
+  tabsEl.replaceChildren(...children);
 }
 
 function applyState(state: DockedShellStateSnapshot | null) {
@@ -394,7 +472,7 @@ function showToolbarButtonContextMenu(
 }
 
 addTabButton.addEventListener("click", () => {
-  window.dockedShell.newTab("https://example.com/");
+  window.dockedShell.newTab();
 });
 
 homeButton.addEventListener("click", () => {
@@ -469,6 +547,19 @@ closeWindowButton.addEventListener("click", () => {
 new ResizeObserver(() => {
   renderTabs();
 }).observe(tabsHost);
+
+ensureButtonIcon(addTabButton, "icon-add");
+ensureButtonIcon(backButton, "icon-back");
+ensureButtonIcon(forwardButton, "icon-forward");
+ensureButtonIcon(reloadButton, "icon-reload");
+ensureButtonIcon(homeButton, "icon-home");
+ensureButtonIcon(restoreTabButton, "icon-restore-tab");
+ensureButtonIcon(favoritesButton, "icon-favorites");
+ensureButtonIcon(downloadsButton, "icon-downloads");
+ensureButtonIcon(extensionsButton, "icon-extensions");
+ensureButtonIcon(appMenuButton, "icon-menu");
+ensureButtonIcon(minimizeWindowButton, "icon-minimize");
+ensureButtonIcon(closeWindowButton, "icon-close");
 
 window.dockedShell.onStateChanged(applyState);
 void window.dockedShell.getState().then(applyState);

@@ -15,229 +15,81 @@ import {
   WebContentsView,
 } from "electron";
 
+import {
+  DEFAULT_URL,
+  INTERNAL_DOWNLOADS_URL,
+  INTERNAL_EXTENSIONS_URL,
+  INTERNAL_HISTORY_URL,
+  INTERNAL_SETTINGS_URL,
+  CONTROLS_HEIGHT,
+  DEFAULT_DOCK_HEIGHT,
+  DEFAULT_DOCK_WIDTH,
+  MAX_HISTORY_ENTRIES,
+  DOCK_POSITIONS,
+  GPU_COMPAT_RELAUNCH_ARG,
+  SETTINGS_SECTIONS,
+  buildDesktopChromeUserAgent,
+  getWindowBackgroundColor,
+  type DockPosition,
+  type MenuSection,
+  type ThemeSource,
+  type ToolbarContextButtonId,
+  type ToolbarPreferences,
+  type RuntimeInfoSnapshot,
+  type BrowserTab,
+  type BrowserShellState,
+} from "./main/model.js";
+
+import {
+  normalizeThemeSource,
+  cloneToolbarPreferences,
+  normalizeToolbarPreferences,
+  getThemeSnapshot,
+  readBrowserHistory,
+  writeBrowserHistory,
+  createHistoryEntryId,
+  shouldRecordHistoryUrl,
+  readRuntimePreferences,
+  writeRuntimePreferences,
+} from "./main/local-persistence.js";
+
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const DEFAULT_URL = "https://www.baidu.com/";
-const INTERNAL_DOWNLOADS_URL = "chrome://downloads";
-const INTERNAL_EXTENSIONS_URL = "chrome://extensions";
-const INTERNAL_SETTINGS_URL = "chrome://settings";
-const CONTROLS_HEIGHT = 136;
-const DEFAULT_DOCK_HEIGHT = 360;
-const DEFAULT_DOCK_WIDTH = 520;
-const DOCK_POSITIONS = {
-  bottom: "bottom",
-  left: "left",
-  right: "right",
-} as const;
-
-type DockPosition = (typeof DOCK_POSITIONS)[keyof typeof DOCK_POSITIONS];
-type MenuSection =
-  | "file"
-  | "navigate"
-  | "debug"
-  | "app"
-  | "downloads"
-  | "favorites";
-type GpuMode = "hardware" | "compatibility" | "limited";
-type ThemeSource = "system" | "light" | "dark";
-type ResolvedTheme = "light" | "dark";
-type ToolbarPlacement = "left" | "right";
-type ToolbarContextButtonId = "restoreClosedTab" | "favorites";
-const GPU_COMPAT_RELAUNCH_ARG = "--gpu-compat-relaunch";
-
-interface ToolbarVisibilityPreference {
-  visible: boolean;
-}
-
-interface ToolbarPlacementPreference extends ToolbarVisibilityPreference {
-  placement: ToolbarPlacement;
-}
-
-interface ToolbarPreferences {
-  home: ToolbarVisibilityPreference;
-  restoreClosedTab: ToolbarPlacementPreference;
-  favorites: ToolbarPlacementPreference;
-  downloads: ToolbarVisibilityPreference;
-  extensions: ToolbarVisibilityPreference;
-}
-
-const DEFAULT_TOOLBAR_PREFERENCES: ToolbarPreferences = {
-  home: {
-    visible: true,
-  },
-  restoreClosedTab: {
-    visible: true,
-    placement: "right",
-  },
-  favorites: {
-    visible: true,
-    placement: "right",
-  },
-  downloads: {
-    visible: true,
-  },
-  extensions: {
-    visible: true,
-  },
-};
-
-interface RuntimePreferences {
-  preferCompatibilityGpu: boolean;
-  themeSource: ThemeSource;
-  toolbarPreferences: ToolbarPreferences;
-}
-
-interface ThemeSnapshot {
-  source: ThemeSource;
-  resolved: ResolvedTheme;
-}
-
-interface RuntimeInfoSnapshot {
-  environmentLabel: string;
-  gpuMode: GpuMode;
-  gpuLabel: string;
-  gpuReason: string;
-  dbusNoiseSuppressed: boolean;
-}
-
-interface TabSnapshot {
-  id: string;
-  title: string;
-  url: string;
-  isLoading: boolean;
-  canGoBack: boolean;
-  canGoForward: boolean;
-}
-
-interface BrowserTab extends TabSnapshot {
-  pageView: WebContentsView;
-}
-
-interface BrowserShellState {
-  closedTabHistory: Array<Pick<TabSnapshot, "title" | "url">>;
-  devtoolsView: WebContentsView;
-  devtoolsVisible: boolean;
-  dockPosition: DockPosition;
-  runtimeInfo: RuntimeInfoSnapshot;
-  toolbarPreferences: ToolbarPreferences;
-  theme: ThemeSnapshot;
-  tabs: BrowserTab[];
-  activeTabId: string | null;
-  attachedTabId: string | null;
-  devtoolsAttached: boolean;
-  isMaximized: boolean;
-}
-
+const DESKTOP_CHROME_USER_AGENT = buildDesktopChromeUserAgent();
 const dockedWindowStateById = new Map<number, BrowserShellState>();
 
-function getWindowBackgroundColor(theme: ResolvedTheme) {
-  return theme === "dark" ? "#0b1118" : "#dce4ee";
+function persistBrowserHistory() {
+  browserHistory = browserHistory.slice(0, MAX_HISTORY_ENTRIES);
+  writeBrowserHistory(browserHistory);
 }
 
-function normalizeThemeSource(value: string | undefined): ThemeSource {
-  return value === "light" || value === "dark" || value === "system"
-    ? value
-    : "system";
-}
-
-function normalizeToolbarPlacement(
-  value: string | undefined,
-): ToolbarPlacement {
-  return value === "left" || value === "right" ? value : "right";
-}
-
-function cloneToolbarPreferences(
-  preferences: ToolbarPreferences,
-): ToolbarPreferences {
-  return {
-    home: { ...preferences.home },
-    restoreClosedTab: { ...preferences.restoreClosedTab },
-    favorites: { ...preferences.favorites },
-    downloads: { ...preferences.downloads },
-    extensions: { ...preferences.extensions },
-  };
-}
-
-function normalizeToolbarPreferences(
-  value: Partial<ToolbarPreferences> | undefined,
-): ToolbarPreferences {
-  const home = value?.home;
-  const restoreClosedTab = value?.restoreClosedTab;
-  const favorites = value?.favorites;
-  const downloads = value?.downloads;
-  const extensions = value?.extensions;
-
-  return {
-    home: {
-      visible: home?.visible ?? DEFAULT_TOOLBAR_PREFERENCES.home.visible,
-    },
-    restoreClosedTab: {
-      visible:
-        restoreClosedTab?.visible ??
-        DEFAULT_TOOLBAR_PREFERENCES.restoreClosedTab.visible,
-      placement: normalizeToolbarPlacement(restoreClosedTab?.placement),
-    },
-    favorites: {
-      visible:
-        favorites?.visible ?? DEFAULT_TOOLBAR_PREFERENCES.favorites.visible,
-      placement: normalizeToolbarPlacement(favorites?.placement),
-    },
-    downloads: {
-      visible:
-        downloads?.visible ?? DEFAULT_TOOLBAR_PREFERENCES.downloads.visible,
-    },
-    extensions: {
-      visible:
-        extensions?.visible ?? DEFAULT_TOOLBAR_PREFERENCES.extensions.visible,
-    },
-  };
-}
-
-function getResolvedTheme(): ResolvedTheme {
-  return nativeTheme.shouldUseDarkColors ? "dark" : "light";
-}
-
-function getThemeSnapshot(themeSource: ThemeSource): ThemeSnapshot {
-  return {
-    source: themeSource,
-    resolved: getResolvedTheme(),
-  };
-}
-
-function getRuntimePreferencesPath() {
-  return path.join(app.getPath("userData"), "runtime-preferences.json");
-}
-
-function readRuntimePreferences(): RuntimePreferences {
-  try {
-    const raw = fs.readFileSync(getRuntimePreferencesPath(), "utf8");
-    const parsed = JSON.parse(raw) as Partial<RuntimePreferences>;
-
-    return {
-      preferCompatibilityGpu: Boolean(parsed.preferCompatibilityGpu),
-      themeSource: normalizeThemeSource(parsed.themeSource),
-      toolbarPreferences: normalizeToolbarPreferences(
-        parsed.toolbarPreferences,
-      ),
-    };
-  } catch {
-    return {
-      preferCompatibilityGpu: false,
-      themeSource: "system",
-      toolbarPreferences: cloneToolbarPreferences(DEFAULT_TOOLBAR_PREFERENCES),
-    };
+function recordHistoryVisit(url: string, title: string) {
+  if (!shouldRecordHistoryUrl(url)) {
+    return;
   }
+
+  browserHistory.unshift({
+    id: createHistoryEntryId(),
+    title: title.trim() || url,
+    url,
+    visitedAt: new Date().toISOString(),
+  });
+  persistBrowserHistory();
 }
 
-function writeRuntimePreferences(preferences: RuntimePreferences) {
-  const runtimePreferencesPath = getRuntimePreferencesPath();
+function updateRecentHistoryTitle(url: string, title: string) {
+  if (!shouldRecordHistoryUrl(url) || !title.trim()) {
+    return;
+  }
 
-  fs.mkdirSync(path.dirname(runtimePreferencesPath), { recursive: true });
-  fs.writeFileSync(
-    runtimePreferencesPath,
-    JSON.stringify(preferences, null, 2),
-    "utf8",
-  );
+  const targetEntry = browserHistory.find((entry) => entry.url === url);
+  if (!targetEntry || targetEntry.title === title.trim()) {
+    return;
+  }
+
+  targetEntry.title = title.trim();
+  persistBrowserHistory();
 }
+
 
 function isWslEnvironment() {
   return (
@@ -252,6 +104,7 @@ function hasDxgAdapter() {
 }
 
 const runtimePreferences = readRuntimePreferences();
+let browserHistory = readBrowserHistory();
 nativeTheme.themeSource = runtimePreferences.themeSource;
 const shouldUsePersistedCompatibilityGpu =
   runtimePreferences.preferCompatibilityGpu;
@@ -307,6 +160,7 @@ function createInitialRuntimeInfo(): RuntimeInfoSnapshot {
 }
 
 const runtimeInfo = createInitialRuntimeInfo();
+app.userAgentFallback = DESKTOP_CHROME_USER_AGENT;
 
 function applyRuntimeStrategy() {
   if (runtimeInfo.dbusNoiseSuppressed) {
@@ -336,509 +190,39 @@ function createTabId() {
   return `tab-${Date.now()}-${Math.random().toString(16).slice(2, 8)}`;
 }
 
-function normalizeInternalUrl(url: string) {
-  return url.trim().toLowerCase().replace(/\/+$/, "");
-}
 
-function isSettingsUrl(url: string) {
-  const normalizedUrl = normalizeInternalUrl(url);
-  return (
-    normalizedUrl === INTERNAL_SETTINGS_URL ||
-    normalizedUrl === "about:settings"
-  );
-}
+import {
+  getSettingsSectionFromUrl,
+  isSettingsUrl,
+  isDownloadsUrl,
+  isExtensionsUrl,
+  isHistoryUrl,
+  isInternalPageUrl,
+  isInternalRenderedUrl,
+  getInternalPageDisplayUrl,
+} from "./main/url-utils.js";
 
-function isDownloadsUrl(url: string) {
-  return normalizeInternalUrl(url) === INTERNAL_DOWNLOADS_URL;
-}
+import {
+  createInternalPageDataUrl,
+} from "./main/page-html.js";
 
-function isExtensionsUrl(url: string) {
-  return normalizeInternalUrl(url) === INTERNAL_EXTENSIONS_URL;
-}
 
-function isInternalPageUrl(url: string) {
-  return isSettingsUrl(url) || isDownloadsUrl(url) || isExtensionsUrl(url);
-}
-
-function isInternalRenderedUrl(url: string) {
-  return url.startsWith("data:text/html");
-}
-
-function getInternalPageDisplayUrl(url: string) {
-  if (isSettingsUrl(url)) {
-    return INTERNAL_SETTINGS_URL;
-  }
-
-  if (isDownloadsUrl(url)) {
-    return INTERNAL_DOWNLOADS_URL;
-  }
-
-  if (isExtensionsUrl(url)) {
-    return INTERNAL_EXTENSIONS_URL;
-  }
-
-  return url;
-}
-
-function createDownloadsPageHtml(theme: ThemeSnapshot) {
-  return `<!doctype html>
-<html lang="zh-CN">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>下载</title>
-    <style>
-      :root {
-        color-scheme: ${theme.resolved};
-        font-family: "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
-        --bg: ${theme.resolved === "dark" ? "#101821" : "#f3f7fb"};
-        --panel: ${theme.resolved === "dark" ? "#18212c" : "#ffffff"};
-        --line: ${theme.resolved === "dark" ? "#324255" : "#d6dee8"};
-        --text: ${theme.resolved === "dark" ? "#edf2f7" : "#1f2328"};
-        --muted: ${theme.resolved === "dark" ? "#93a1b1" : "#617283"};
-      }
-      * { box-sizing: border-box; }
-      body { margin: 0; padding: 36px 28px; color: var(--text); background: var(--bg); }
-      .card { max-width: 880px; margin: 0 auto; padding: 22px; background: var(--panel); border: 1px solid var(--line); border-radius: 18px; }
-      h1 { margin: 0 0 10px; font-size: 28px; }
-      p { margin: 0; color: var(--muted); line-height: 1.7; }
-      ul { margin: 18px 0 0; color: var(--muted); line-height: 1.8; }
-    </style>
-  </head>
-  <body>
-    <section class="card">
-      <h1>下载</h1>
-      <p>这里是第一版下载页占位。后续可接入真实下载任务列表、进度、失败重试和打开文件夹能力。</p>
-      <ul>
-        <li>顶部按钮已经可以直接打开本页</li>
-        <li>下载弹出菜单也会把用户带到这里</li>
-        <li>当前版本优先打通浏览器式入口路径</li>
-      </ul>
-    </section>
-  </body>
-</html>`;
-}
-
-function createExtensionsPageHtml(theme: ThemeSnapshot) {
-  return `<!doctype html>
-<html lang="zh-CN">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>扩展</title>
-    <style>
-      :root {
-        color-scheme: ${theme.resolved};
-        font-family: "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
-        --bg: ${theme.resolved === "dark" ? "#101821" : "#f3f7fb"};
-        --panel: ${theme.resolved === "dark" ? "#18212c" : "#ffffff"};
-        --line: ${theme.resolved === "dark" ? "#324255" : "#d6dee8"};
-        --text: ${theme.resolved === "dark" ? "#edf2f7" : "#1f2328"};
-        --muted: ${theme.resolved === "dark" ? "#93a1b1" : "#617283"};
-      }
-      * { box-sizing: border-box; }
-      body { margin: 0; padding: 36px 28px; color: var(--text); background: var(--bg); }
-      .card { max-width: 880px; margin: 0 auto; padding: 22px; background: var(--panel); border: 1px solid var(--line); border-radius: 18px; }
-      h1 { margin: 0 0 10px; font-size: 28px; }
-      p { margin: 0; color: var(--muted); line-height: 1.7; }
-      ul { margin: 18px 0 0; color: var(--muted); line-height: 1.8; }
-    </style>
-  </head>
-  <body>
-    <section class="card">
-      <h1>扩展</h1>
-      <p>这里是扩展页占位。当前版本先把入口与浏览器壳打通，后续可继续接入扩展管理与安装能力。</p>
-      <ul>
-        <li>顶部扩展按钮会直接打开本页</li>
-        <li>主题会跟随当前壳层同步</li>
-        <li>后续可扩展为真正的扩展管理面板</li>
-      </ul>
-    </section>
-  </body>
-</html>`;
-}
-
-function createSettingsPageHtml(theme: ThemeSnapshot) {
-  const isDark = theme.resolved === "dark";
-
-  return `<!doctype html>
-<html lang="zh-CN">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>设置</title>
-    <style>
-      :root {
-        color-scheme: ${theme.resolved};
-        font-family: "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
-        --bg: ${isDark ? "#121a23" : "#f7f9fc"};
-        --sidebar-bg: ${isDark ? "#151f2a" : "#ffffff"};
-        --content-bg: ${isDark ? "#121a23" : "#ffffff"};
-        --line: ${isDark ? "#233243" : "#e5eaf0"};
-        --text: ${isDark ? "#edf3fb" : "#232a31"};
-        --muted: ${isDark ? "#95a5b7" : "#7a8796"};
-        --soft: ${isDark ? "#1a2531" : "#f7f9fc"};
-        --accent: ${isDark ? "#5f9dff" : "#4d97ff"};
-        --accent-strong: ${isDark ? "#4d8cf2" : "#3e86f0"};
-        --accent-text: #ffffff;
-        --button-bg: ${isDark ? "#192431" : "#ffffff"};
-        --button-hover: ${isDark ? "#203041" : "#f2f6fb"};
-        --input-bg: ${isDark ? "#101821" : "#fbfcfe"};
-        --shadow: ${isDark ? "0 12px 30px rgba(0,0,0,0.22)" : "0 8px 24px rgba(31,45,61,0.06)"};
-      }
-
-      * {
-        box-sizing: border-box;
-      }
-
-      body {
-        margin: 0;
-        color: var(--text);
-        background: var(--bg);
-      }
-
-      .page {
-        display: grid;
-        grid-template-columns: 244px minmax(0, 1fr);
-        min-height: 100vh;
-      }
-
-      .sidebar {
-        padding: 18px 0 22px;
-        background: var(--sidebar-bg);
-        border-right: 1px solid var(--line);
-        box-shadow: var(--shadow);
-      }
-
-      .sidebar-title {
-        padding: 0 18px 14px;
-        font-size: 34px;
-        font-weight: 500;
-        letter-spacing: 0.02em;
-        color: ${isDark ? "#d6deea" : "#687789"};
-      }
-
-      .sidebar-search {
-        padding: 0 18px 14px;
-      }
-
-      .sidebar-search input,
-      .top-search input,
-      .homepage-input,
-      .select-field {
-        width: 100%;
-        height: 34px;
-        padding: 0 12px;
-        color: var(--text);
-        background: var(--input-bg);
-        border: 1px solid var(--line);
-        border-radius: 6px;
-        outline: none;
-      }
-
-      .sidebar-search input::placeholder,
-      .top-search input::placeholder {
-        color: var(--muted);
-      }
-
-      .nav {
-        display: flex;
-        flex-direction: column;
-        gap: 2px;
-      }
-
-      .nav-item {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        padding: 10px 18px;
-        font-size: 14px;
-        color: var(--muted);
-      }
-
-      .nav-item.active {
-        color: var(--accent-text);
-        background: linear-gradient(180deg, var(--accent) 0%, var(--accent-strong) 100%);
-      }
-
-      .nav-icon {
-        display: inline-flex;
-        width: 15px;
-        justify-content: center;
-        opacity: 0.9;
-      }
-
-      .content {
-        padding: 20px 30px 60px;
-        background: var(--content-bg);
-      }
-
-      .topbar {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 18px;
-        margin-bottom: 22px;
-      }
-
-      .top-search {
-        width: 190px;
-      }
-
-      .ghost-button,
-      .inline-button {
-        height: 34px;
-        padding: 0 14px;
-        color: var(--muted);
-        background: var(--button-bg);
-        border: 1px solid var(--line);
-        border-radius: 6px;
-        cursor: default;
-      }
-
-      .ghost-button:hover,
-      .inline-button:hover {
-        background: var(--button-hover);
-      }
-
-      .section {
-        max-width: 920px;
-        margin-bottom: 36px;
-      }
-
-      .section h2 {
-        margin: 0;
-        font-size: 18px;
-        font-weight: 600;
-      }
-
-      .section-note {
-        margin: 8px 0 16px;
-        color: var(--muted);
-        font-size: 13px;
-        line-height: 1.7;
-      }
-
-      .option-line,
-      .checkbox-line,
-      .radio-line {
-        display: flex;
-        align-items: flex-start;
-        gap: 10px;
-        margin-bottom: 12px;
-        font-size: 14px;
-        color: var(--text);
-      }
-
-      .radio-line input,
-      .checkbox-line input {
-        margin-top: 3px;
-      }
-
-      .field-stack {
-        display: flex;
-        flex-direction: column;
-        gap: 10px;
-      }
-
-      .homepage-row {
-        display: flex;
-        gap: 10px;
-        align-items: center;
-        margin-top: 4px;
-      }
-
-      .homepage-input {
-        width: min(420px, 100%);
-      }
-
-      .placeholder-panel {
-        width: min(620px, 100%);
-        min-height: 58px;
-        background: var(--soft);
-        border: 1px solid var(--line);
-        border-radius: 6px;
-      }
-
-      .muted {
-        color: var(--muted);
-      }
-
-      .inline-note {
-        color: var(--muted);
-        font-size: 13px;
-      }
-
-      .theme-footnote {
-        margin-top: 18px;
-        color: var(--muted);
-        font-size: 13px;
-      }
-
-      @media (width <= 960px) {
-        .page {
-          grid-template-columns: 1fr;
-        }
-
-        .sidebar {
-          border-right: none;
-          border-bottom: 1px solid var(--line);
-        }
-
-        .content {
-          padding: 20px 18px 42px;
-        }
-
-        .topbar,
-        .homepage-row {
-          flex-direction: column;
-          align-items: stretch;
-        }
-
-        .top-search {
-          width: 100%;
-        }
-      }
-    </style>
-  </head>
-  <body>
-    <main class="page">
-      <aside class="sidebar">
-        <div class="sidebar-title">选项</div>
-        <div class="sidebar-search">
-          <input type="text" placeholder="搜索设置" />
-        </div>
-        <nav class="nav">
-          <div class="nav-item active"><span class="nav-icon">◉</span><span>基本设置</span></div>
-          <div class="nav-item"><span class="nav-icon">☰</span><span>界面设置</span></div>
-          <div class="nav-item"><span class="nav-icon">▣</span><span>标签设置</span></div>
-          <div class="nav-item"><span class="nav-icon">⇩</span><span>下载设置</span></div>
-          <div class="nav-item"><span class="nav-icon">◎</span><span>鼠标手势</span></div>
-          <div class="nav-item"><span class="nav-icon">⌘</span><span>快捷键</span></div>
-          <div class="nav-item"><span class="nav-icon">⚗</span><span>实验室</span></div>
-          <div class="nav-item"><span class="nav-icon">⚙</span><span>高级设置</span></div>
-        </nav>
-      </aside>
-
-      <section class="content">
-        <div class="topbar">
-          <div class="top-search">
-            <input type="text" placeholder="搜索设置" />
-          </div>
-          <button class="ghost-button" type="button">恢复默认设置</button>
-        </div>
-
-        <section class="section">
-          <h2>启动页面</h2>
-          <p class="section-note">这一版先把布局和视觉做得更像浏览器设置中心，后续可以继续往这里填真实功能。</p>
-
-          <div class="field-stack">
-            <label class="radio-line">
-              <input type="radio" checked />
-              <span>打开主页</span>
-            </label>
-            <div class="homepage-row">
-              <input class="homepage-input" type="text" value="https://hao.360.com/?a=1004" />
-              <button class="inline-button" type="button">主页已锁定</button>
-            </div>
-            <div class="inline-note">后续这里可扩展“继续上次未关闭网页”“打开以下网页”等真实配置。</div>
-            <label class="radio-line muted">
-              <input type="radio" />
-              <span>继续浏览上次关闭前打开的网页</span>
-            </label>
-            <label class="radio-line muted">
-              <input type="radio" />
-              <span>打开以下网页</span>
-            </label>
-            <div class="placeholder-panel"></div>
-          </div>
-        </section>
-
-        <section class="section">
-          <h2>搜索</h2>
-          <div class="option-line">
-            <span style="width: 84px">搜索引擎</span>
-            <input class="select-field" type="text" value="360搜索" style="width: 140px" />
-            <input class="select-field" type="text" value="管理搜索引擎..." style="width: 180px" />
-          </div>
-          <label class="checkbox-line">
-            <input type="checkbox" checked />
-            <span>地址栏可直接搜索，自动匹配默认搜索引擎</span>
-          </label>
-          <label class="checkbox-line">
-            <input type="checkbox" checked />
-            <span>新标签页小文本框可作为浏览器搜索工具条</span>
-          </label>
-          <label class="checkbox-line">
-            <input type="checkbox" checked />
-            <span>启用搜索栏热词提示等扩展能力</span>
-          </label>
-          <label class="checkbox-line">
-            <input type="checkbox" checked />
-            <span>地址栏搜索结果展示联想词</span>
-          </label>
-        </section>
-
-        <section class="section">
-          <h2>默认浏览器</h2>
-          <label class="checkbox-line">
-            <input type="checkbox" />
-            <span>启动时检查是否为默认浏览器</span>
-          </label>
-          <div class="option-line">
-            <button class="inline-button" type="button">将 Electron Chrome 设为默认浏览器</button>
-          </div>
-          <div class="inline-note">当前默认浏览器状态：后续可接入系统检测，这里先保留占位。</div>
-        </section>
-
-        <section class="section">
-          <h2>关闭时</h2>
-          <label class="checkbox-line">
-            <input type="checkbox" checked />
-            <span>浏览器异常关闭后，下次启动时提示恢复标签页</span>
-          </label>
-          <div class="theme-footnote">当前主题来源：${theme.source} · 实际生效：${theme.resolved}。如果使用 <strong>system</strong>，页面会跟随系统主题自动刷新。</div>
-        </section>
-      </section>
-    </main>
-  </body>
-</html>`;
-}
-
-function createInternalPageHtml(url: string, theme: ThemeSnapshot) {
-  if (isSettingsUrl(url)) {
-    return createSettingsPageHtml(theme);
-  }
-
-  if (isDownloadsUrl(url)) {
-    return createDownloadsPageHtml(theme);
-  }
-
-  if (isExtensionsUrl(url)) {
-    return createExtensionsPageHtml(theme);
-  }
-
-  return `<!doctype html><html><head><meta charset="UTF-8" /><title>内部页面</title></head><body></body></html>`;
-}
-
-function createInternalPageDataUrl(url: string, theme: ThemeSnapshot) {
-  return `data:text/html;charset=UTF-8,${encodeURIComponent(createInternalPageHtml(url, theme))}`;
-}
-
-function openTabUrl(tab: BrowserTab, url: string, theme: ThemeSnapshot) {
+function openTabUrl(tab: BrowserTab, url: string, state: BrowserShellState) {
   const nextUrl = getInternalPageDisplayUrl(url || DEFAULT_URL);
 
   tab.url = nextUrl;
   if (isInternalPageUrl(nextUrl)) {
     tab.title = isSettingsUrl(nextUrl)
-      ? "设置"
+      ? `设置 · ${(SETTINGS_SECTIONS.find((section) => section.id === getSettingsSectionFromUrl(nextUrl))?.label ?? "基础偏好")}`
       : isDownloadsUrl(nextUrl)
         ? "下载"
         : isExtensionsUrl(nextUrl)
           ? "扩展"
+          : isHistoryUrl(nextUrl)
+            ? "历史记录"
           : "内部页面";
     void tab.pageView.webContents.loadURL(
-      createInternalPageDataUrl(nextUrl, theme),
+      createInternalPageDataUrl(nextUrl, state.theme, state, browserHistory),
     );
     return;
   }
@@ -923,7 +307,7 @@ function refreshInternalPagesForTheme(state: BrowserShellState) {
       continue;
     }
 
-    openTabUrl(tab, tab.url, state.theme);
+    openTabUrl(tab, tab.url, state);
   }
 }
 
@@ -1278,6 +662,19 @@ function openExtensionsTab(win: BrowserWindow, state: BrowserShellState) {
   return createTab(win, state, INTERNAL_EXTENSIONS_URL, { activate: true });
 }
 
+function openHistoryTab(win: BrowserWindow, state: BrowserShellState) {
+  const existingTab = state.tabs.find((tab) => isHistoryUrl(tab.url));
+
+  if (existingTab) {
+    activateTab(win, state, existingTab.id);
+    openTabUrl(existingTab, INTERNAL_HISTORY_URL, state);
+    notifyStateChanged(win, state);
+    return existingTab;
+  }
+
+  return createTab(win, state, INTERNAL_HISTORY_URL, { activate: true });
+}
+
 function restoreClosedTab(win: BrowserWindow, state: BrowserShellState) {
   const lastClosedTab = state.closedTabHistory.pop();
 
@@ -1483,6 +880,7 @@ function createTab(
       sandbox: true,
     },
   });
+  pageView.webContents.setUserAgent(DESKTOP_CHROME_USER_AGENT);
 
   const tab: BrowserTab = {
     id: createTabId(),
@@ -1503,8 +901,19 @@ function createTab(
     return { action: "deny" };
   });
 
+  pageView.webContents.on("will-navigate", (event, url) => {
+    if (!isInternalPageUrl(url)) {
+      return;
+    }
+
+    event.preventDefault();
+    openTabUrl(tab, url, state);
+    notifyStateChanged(win, state);
+  });
+
   pageView.webContents.on("page-title-updated", (_event, title) => {
     tab.title = title || tab.title || tab.url || "新标签页";
+    updateRecentHistoryTitle(tab.url, tab.title);
     notifyStateChanged(win, state);
   });
 
@@ -1517,6 +926,10 @@ function createTab(
     tab.isLoading = false;
     syncTabNavigationState(tab);
     notifyStateChanged(win, state);
+  });
+
+  pageView.webContents.on("did-finish-load", () => {
+    recordHistoryVisit(tab.url, tab.title);
   });
 
   pageView.webContents.on("did-navigate", (_event, url) => {
@@ -1580,7 +993,7 @@ function createTab(
 
   layoutViews(win, state);
   notifyStateChanged(win, state);
-  openTabUrl(tab, initialUrl || DEFAULT_URL, state.theme);
+  openTabUrl(tab, initialUrl || DEFAULT_URL, state);
   return tab;
 }
 
@@ -1637,7 +1050,7 @@ function navigateActiveTab(state: BrowserShellState, url: string) {
   if (!activeTab || !url) {
     return;
   }
-  openTabUrl(activeTab, url, state.theme);
+  openTabUrl(activeTab, url, state);
 }
 
 function buildFileMenuTemplate(
@@ -1665,6 +1078,11 @@ function buildFileMenuTemplate(
       label: "设置",
       accelerator: "CmdOrCtrl+,",
       click: () => openSettingsTab(win, state),
+    },
+    {
+      label: "历史记录",
+      accelerator: "CmdOrCtrl+H",
+      click: () => openHistoryTab(win, state),
     },
     {
       label: "扩展",
@@ -1704,6 +1122,11 @@ function buildAppMenuTemplate(
       label: "恢复刚关闭的标签页",
       enabled: state.closedTabHistory.length > 0,
       click: () => restoreClosedTab(win, state),
+    },
+    {
+      label: "历史记录",
+      accelerator: "CmdOrCtrl+H",
+      click: () => openHistoryTab(win, state),
     },
     {
       label: "扩展",

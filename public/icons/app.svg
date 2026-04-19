@@ -1,1 +1,22 @@
-<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="1569.715181350708" height="1599.4532984495163" viewBox="0 0 1569.715181350708 1599.4532984495163" fill="none"><path d="M784.851 97.5079C787.091 -7.79791 81.3361 -22.6727 26.1865 97.5079L26.1865 1543.79C9.27367 1555.95 7.57816 1567.76 26.1865 1577.85L26.1865 1543.79C110.682 1483.09 574.992 1413.61 784.851 1503.43L784.851 97.5079ZM784.862 97.5079C782.622 -7.79791 1488.37 -22.6727 1543.52 97.5079L1543.52 1543.79C1459.02 1483.09 994.72 1413.61 784.862 1503.43L784.862 97.5079ZM1543.52 1543.79L1543.52 1577.85C1562.14 1567.76 1560.45 1555.95 1543.52 1543.79Z" stroke="rgba(0, 80, 179, 1)" stroke-width="25.7164259529759"    fill-rule="evenodd"  fill="#1890FF" ></path><rect  x="575.858491897583" y="587.7165430784225" width="419" height="415.28485107421875" rx="58.44642262039973"    fill="#FFFFFF" ></rect><path     fill="#52C41A"  d="M879.851 805.553L747.862 891.23C740.086 896.278 729.809 890.697 729.809 881.425L729.809 710.071C729.809 700.799 740.086 695.218 747.862 700.266L879.851 785.943C886.951 790.552 886.951 800.944 879.851 805.553Z"></path></svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none" role="img" aria-label="electron-chrome">
+  <defs>
+    <linearGradient id="ec-ring" x1="4" y1="4" x2="60" y2="60" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#60c8f8"/>
+      <stop offset="100%" stop-color="#1565c0"/>
+    </linearGradient>
+    <radialGradient id="ec-orbit" cx="50%" cy="50%" r="50%" gradientUnits="objectBoundingBox">
+      <stop offset="0%" stop-color="#60c8f8" stop-opacity="1"/>
+      <stop offset="100%" stop-color="#90d8ff" stop-opacity="0.3"/>
+    </radialGradient>
+    <radialGradient id="ec-nucleus" cx="38%" cy="35%" r="65%" gradientUnits="objectBoundingBox">
+      <stop offset="0%" stop-color="#60c8f8"/>
+      <stop offset="100%" stop-color="#1565c0"/>
+    </radialGradient>
+  </defs>
+  <circle cx="32" cy="32" r="27" stroke="url(#ec-ring)" stroke-width="2.5"/>
+  <ellipse cx="32" cy="32" rx="27" ry="10.5"
+           stroke="url(#ec-orbit)" stroke-width="1.8"
+           transform="rotate(-38 32 32)"/>
+  <circle cx="32" cy="32" r="7.5" fill="url(#ec-nucleus)"/>
+  <circle cx="53" cy="15" r="3" fill="#90d8ff"/>
+</svg>

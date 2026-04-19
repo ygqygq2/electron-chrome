@@ -11,22 +11,38 @@
       <div class="tabbar">
         <div id="tabsHost" class="tabs-host">
           <div id="tabs" class="tabs"></div>
-          <button id="addTabButton" class="tab-add" type="button" title="新建标签页">+</button>
+          <button id="addTabButton" class="tab-add" type="button" title="新建标签页" aria-label="新建标签页">
+            <span class="toolbar-icon icon-add" aria-hidden="true"></span>
+          </button>
         </div>
 
         <div class="window-controls top-window-controls">
-          <button id="minimizeWindowButton" class="window-control-button" type="button" title="最小化">—</button>
-          <button id="maximizeWindowButton" class="window-control-button" type="button" title="最大化">□</button>
-          <button id="closeWindowButton" class="window-control-button close" type="button" title="关闭">✕</button>
+          <button id="minimizeWindowButton" class="window-control-button" type="button" title="最小化" aria-label="最小化">
+            <span class="toolbar-icon icon-minimize" aria-hidden="true"></span>
+          </button>
+          <button id="maximizeWindowButton" class="window-control-button" type="button" title="最大化" aria-label="最大化">
+            <span class="toolbar-icon icon-maximize" aria-hidden="true"></span>
+          </button>
+          <button id="closeWindowButton" class="window-control-button close" type="button" title="关闭" aria-label="关闭">
+            <span class="toolbar-icon icon-close" aria-hidden="true"></span>
+          </button>
         </div>
       </div>
 
       <div class="toolbar">
         <div class="nav-group">
-          <button id="backButton" class="nav-button" type="button" title="后退">‹</button>
-          <button id="forwardButton" class="nav-button" type="button" title="前进">›</button>
-          <button id="reloadButton" class="nav-button" type="button" title="刷新">↻</button>
-          <button id="homeButton" class="nav-button" type="button" title="首页">⌂</button>
+          <button id="backButton" class="nav-button" type="button" title="后退" aria-label="后退">
+            <span class="toolbar-icon icon-back" aria-hidden="true"></span>
+          </button>
+          <button id="forwardButton" class="nav-button" type="button" title="前进" aria-label="前进">
+            <span class="toolbar-icon icon-forward" aria-hidden="true"></span>
+          </button>
+          <button id="reloadButton" class="nav-button" type="button" title="刷新" aria-label="刷新">
+            <span class="toolbar-icon icon-reload" aria-hidden="true"></span>
+          </button>
+          <button id="homeButton" class="nav-button" type="button" title="首页" aria-label="首页">
+            <span class="toolbar-icon icon-home" aria-hidden="true"></span>
+          </button>
         </div>
 
         <div id="leftToolbarActions" class="toolbar-actions toolbar-actions-left"></div>
@@ -42,13 +58,23 @@
           </div>
 
           <div id="rightToolbarActions" class="toolbar-actions toolbar-actions-right">
-            <button id="restoreTabButton" class="toolbar-action-button" type="button" title="重新打开关闭的标签页">↶</button>
-            <button id="favoritesButton" class="toolbar-action-button" type="button" title="收藏夹">☆</button>
-            <button id="downloadsButton" class="toolbar-action-button" type="button" title="下载">⇩</button>
-            <button id="extensionsButton" class="toolbar-action-button" type="button" title="扩展">◧</button>
+            <button id="restoreTabButton" class="toolbar-action-button" type="button" title="重新打开关闭的标签页" aria-label="重新打开关闭的标签页">
+              <span class="toolbar-icon icon-restore-tab" aria-hidden="true"></span>
+            </button>
+            <button id="favoritesButton" class="toolbar-action-button" type="button" title="收藏夹" aria-label="收藏夹">
+              <span class="toolbar-icon icon-favorites" aria-hidden="true"></span>
+            </button>
+            <button id="downloadsButton" class="toolbar-action-button" type="button" title="下载" aria-label="下载">
+              <span class="toolbar-icon icon-downloads" aria-hidden="true"></span>
+            </button>
+            <button id="extensionsButton" class="toolbar-action-button" type="button" title="扩展" aria-label="扩展">
+              <span class="toolbar-icon icon-extensions" aria-hidden="true"></span>
+            </button>
           </div>
 
-          <button id="appMenuButton" class="app-menu-button" type="button" title="菜单">☰</button>
+          <button id="appMenuButton" class="app-menu-button" type="button" title="菜单" aria-label="菜单">
+            <span class="toolbar-icon icon-menu" aria-hidden="true"></span>
+          </button>
         </div>
       </div>
     </div>

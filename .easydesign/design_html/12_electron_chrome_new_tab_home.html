@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Electron Chrome 新标签页原型</title>
+    <style>
+      :root {
+        font-family: "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+        color: #fff;
+        background:
+          radial-gradient(circle at 50% 22%, rgba(115, 207, 255, 0.35), transparent 20%),
+          radial-gradient(circle at 22% 58%, rgba(255, 255, 255, 0.22), transparent 16%),
+          radial-gradient(circle at 78% 62%, rgba(129, 183, 255, 0.18), transparent 18%),
+          linear-gradient(180deg, #0c63b7 0%, #2f82d8 38%, #4e9ce7 62%, #87bff2 100%);
+      }
+      * { box-sizing: border-box; }
+      body { margin: 0; min-height: 100vh; color: inherit; overflow: hidden; }
+      .page { position: relative; min-height: 100vh; padding: 24px; }
+      .topbar { display: flex; justify-content: flex-end; }
+      .capsule { display: inline-flex; gap: 10px; align-items: center; padding: 0 14px; height: 36px; border-radius: 999px; background: rgba(16, 39, 73, 0.3); backdrop-filter: blur(12px); }
+      .hero { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: calc(100vh - 80px); }
+      .brand { margin-bottom: 18px; font-size: 30px; font-weight: 700; letter-spacing: 0.08em; }
+      .subtitle { margin-bottom: 22px; opacity: 0.84; }
+      .search { display: flex; align-items: center; width: min(620px, 92vw); height: 52px; padding: 0 16px; border-radius: 999px; background: rgba(255,255,255,0.94); box-shadow: 0 18px 44px rgba(0,0,0,0.16); }
+      .search input { flex: 1; height: 100%; border: 0; outline: none; background: transparent; font-size: 15px; }
+      .chips { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; margin: 18px 0 24px; }
+      .chip { padding: 0 12px; height: 30px; border-radius: 999px; background: rgba(19, 58, 108, 0.34); backdrop-filter: blur(10px); }
+      .grid { display: grid; grid-template-columns: repeat(5, minmax(0, 76px)); gap: 18px 22px; }
+      .site { display: flex; flex-direction: column; align-items: center; gap: 8px; color: #fff; text-decoration: none; }
+      .icon { display: grid; place-items: center; width: 52px; height: 52px; border-radius: 14px; background: rgba(255,255,255,0.18); backdrop-filter: blur(8px); font-size: 22px; font-weight: 700; }
+      .label { font-size: 12px; opacity: 0.95; }
+      .footer { position: absolute; right: 24px; bottom: 24px; padding: 10px 16px; border-radius: 12px; background: rgba(16, 39, 73, 0.34); backdrop-filter: blur(10px); }
+    </style>
+  </head>
+  <body>
+    <main class="page">
+      <div class="topbar"><div class="capsule">📄 主题随系统切换</div></div>
+      <section class="hero">
+        <div class="brand">XUEWUYA HOME</div>
+        <div class="subtitle">一个更轻、更干净的新标签页，而不是普通网页冒充首页。</div>
+        <form class="search">
+          <input placeholder="搜索或输入网址" />
+          <span>🔍</span>
+        </form>
+        <div class="chips">
+          <div class="chip">历史记录</div>
+          <div class="chip">下载中心</div>
+          <div class="chip">设置</div>
+          <div class="chip">扩展</div>
+        </div>
+        <div class="grid">
+          <a class="site" href="#"><div class="icon">G</div><div class="label">GitHub</div></a>
+          <a class="site" href="#"><div class="icon">百</div><div class="label">百度</div></a>
+          <a class="site" href="#"><div class="icon">B</div><div class="label">Bilibili</div></a>
+          <a class="site" href="#"><div class="icon">知</div><div class="label">知乎</div></a>
+          <a class="site" href="#"><div class="icon">电</div><div class="label">Electron</div></a>
+        </div>
+      </section>
+      <div class="footer">不复刻现成产品素材，只借鉴优秀的组织方式。</div>
+    </main>
+  </body>
+</html>

@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>electron-chrome 下载窗口原型</title>
+    <style>
+      :root {
+        color-scheme: light;
+        font-family: "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+        --bg: #f4f6f9;
+        --panel: #ffffff;
+        --line: #e4e8ee;
+        --text: #1f2937;
+        --muted: #718096;
+        --accent: #2563eb;
+        --success: #16a34a;
+        --warning: #d97706;
+        --danger: #dc2626;
+      }
+      * { box-sizing: border-box; }
+      body { margin: 0; background: #dde3ea; }
+      .window {
+        width: 1120px;
+        min-height: 720px;
+        margin: 18px auto;
+        background: var(--bg);
+        border: 1px solid #cfd6df;
+        box-shadow: 0 18px 50px rgba(15, 23, 42, 0.18);
+      }
+      .toolbar,
+      .footer {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        padding: 18px 20px;
+        background: #fff;
+        border-bottom: 1px solid var(--line);
+      }
+      .footer { border-top: 1px solid var(--line); border-bottom: 0; }
+      .title h1 { margin: 0; font-size: 30px; }
+      .title p { margin: 6px 0 0; color: var(--muted); }
+      .actions, .footer-actions { display: flex; gap: 12px; align-items: center; }
+      .button { height: 40px; padding: 0 16px; border: 1px solid var(--line); background: #fff; border-radius: 10px; color: var(--text); }
+      .button.primary { color: #fff; background: var(--accent); border-color: var(--accent); }
+      .search { width: 320px; height: 42px; padding: 0 14px; border: 1px solid var(--line); border-radius: 10px; }
+      .list { padding: 10px 0; }
+      .row {
+        display: grid;
+        grid-template-columns: 64px minmax(0, 1fr) auto;
+        gap: 16px;
+        align-items: center;
+        padding: 18px 20px;
+        border-top: 1px solid var(--line);
+        background: rgba(255,255,255,0.74);
+      }
+      .row:first-child { border-top: 0; }
+      .file-icon {
+        display: grid; place-items: center; width: 44px; height: 54px;
+        color: var(--accent); font-weight: 700; background: #eef4ff; border-radius: 12px;
+      }
+      .main { min-width: 0; }
+      .name { font-size: 18px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+      .meta, .status { margin-top: 6px; color: var(--muted); font-size: 14px; }
+      .status.success { color: var(--success); }
+      .status.warning { color: var(--warning); }
+      .status.danger { color: var(--danger); }
+      .row-actions { display: flex; align-items: center; gap: 10px; }
+      .link { color: var(--accent); text-decoration: none; font-size: 15px; }
+      .muted-link { color: #9aa4b2; text-decoration: none; font-size: 24px; line-height: 1; }
+    </style>
+  </head>
+  <body>
+    <main class="window">
+      <header class="toolbar">
+        <div class="title">
+          <h1>下载</h1>
+          <p>参考系统下载管理器的宽列表弹窗，展示下载任务与高频操作。</p>
+        </div>
+        <div class="actions">
+          <input class="search" placeholder="搜索下载内容" />
+        </div>
+      </header>
+
+      <section class="list">
+        <article class="row">
+          <div class="file-icon">PDF</div>
+          <div class="main">
+            <div class="name">杨广清-AI应用开发工程师.pdf</div>
+            <div class="meta">189 KB · https://example.com/resume.pdf</div>
+            <div class="status success">已完成 · 文件安全可打开</div>
+          </div>
+          <div class="row-actions">
+            <a class="link" href="#">打开</a>
+            <a class="link" href="#">打开文件夹</a>
+            <a class="muted-link" href="#">×</a>
+          </div>
+        </article>
+
+        <article class="row">
+          <div class="file-icon">DOCX</div>
+          <div class="main">
+            <div class="name">运维开发-杨广清.docx</div>
+            <div class="meta">244 KB · https://example.com/devops.docx</div>
+            <div class="status success">已完成 · 可直接打开</div>
+          </div>
+          <div class="row-actions">
+            <a class="link" href="#">打开</a>
+            <a class="link" href="#">打开文件夹</a>
+            <a class="muted-link" href="#">×</a>
+          </div>
+        </article>
+
+        <article class="row">
+          <div class="file-icon">PDF</div>
+          <div class="main">
+            <div class="name">运维开发-杨广清.pdf</div>
+            <div class="meta">20.57 MB · https://example.com/ops.pdf</div>
+            <div class="status warning">文件已删除 · 可重新下载</div>
+          </div>
+          <div class="row-actions">
+            <a class="link" href="#">重新下载</a>
+            <a class="muted-link" href="#">×</a>
+          </div>
+        </article>
+      </section>
+
+      <footer class="footer">
+        <div class="footer-actions">
+          <button class="button">清空已完成</button>
+          <button class="button">打开下载页</button>
+          <button class="button primary">下载设置</button>
+        </div>
+        <div style="color:#718096;">右侧保留搜索，底部保留高频管理动作。</div>
+      </footer>
+    </main>
+  </body>
+</html>

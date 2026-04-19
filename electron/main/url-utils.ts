@@ -12,6 +12,24 @@ function normalizeInternalUrl(url: string) {
   return url.trim().toLowerCase().replace(/\/+$/, "");
 }
 
+export function getHistoryActionFromUrl(url: string) {
+  const normalizedUrl = normalizeInternalUrl(url);
+
+  if (normalizedUrl === `${INTERNAL_HISTORY_URL}/clear`) {
+    return { type: "clear" as const };
+  }
+
+  const deletePrefix = `${INTERNAL_HISTORY_URL}/delete/`;
+  if (normalizedUrl.startsWith(deletePrefix)) {
+    const id = normalizedUrl.slice(deletePrefix.length).trim();
+    if (id) {
+      return { type: "delete" as const, id };
+    }
+  }
+
+  return null;
+}
+
 export function normalizeSettingsSection(value: string | undefined): SettingsSection {
   const normalized = (value ?? "").trim();
   return SETTINGS_SECTIONS.some((section) => section.id === normalized)
@@ -55,7 +73,12 @@ export function isHomeUrl(url: string) {
 }
 
 export function isHistoryUrl(url: string) {
-  return normalizeInternalUrl(url) === INTERNAL_HISTORY_URL;
+  const normalizedUrl = normalizeInternalUrl(url);
+  return (
+    normalizedUrl === INTERNAL_HISTORY_URL ||
+    normalizedUrl === `${INTERNAL_HISTORY_URL}/clear` ||
+    normalizedUrl.startsWith(`${INTERNAL_HISTORY_URL}/delete/`)
+  );
 }
 
 export function isInternalPageUrl(url: string) {

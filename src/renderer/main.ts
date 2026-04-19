@@ -72,6 +72,8 @@ const ICON_MARKUP: Record<string, string> = {
     '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/><path d="M9.5 21v-6h5v6"/></svg>',
   "icon-restore-tab":
     '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 14-5-5 5-5"/><path d="M20 20a8 8 0 0 0-8-8H4"/></svg>',
+  "icon-history":
+    '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6v5h5"/><path d="M5.8 16.8A8 8 0 1 0 4 12"/><path d="M12 7.5v4.8l3 1.9"/></svg>',
   "icon-favorites":
     '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3.7 2.53 5.13 5.67.82-4.1 4 .97 5.65L12 16.43 6.93 19.3l.97-5.65-4.1-4 5.67-.82z"/></svg>',
   "icon-downloads":
@@ -337,7 +339,7 @@ function updateNavigationButtons() {
   forwardButton.disabled = !tab?.canGoForward;
   homeButton.disabled = !tab;
   reloadButton.disabled = !tab;
-  restoreTabButton.disabled = !currentState.canRestoreClosedTab;
+  restoreTabButton.disabled = !tab;
 }
 
 function updateWindowControls() {
@@ -544,7 +546,8 @@ backButton.addEventListener("click", () => window.dockedShell.goBack());
 forwardButton.addEventListener("click", () => window.dockedShell.goForward());
 reloadButton.addEventListener("click", () => window.dockedShell.reload());
 restoreTabButton.addEventListener("click", () => {
-  window.dockedShell.restoreClosedTab();
+  isEditingUrl = false;
+  window.dockedShell.navigate("chrome://history");
 });
 restoreTabButton.addEventListener("contextmenu", (event) => {
   event.preventDefault();
@@ -558,7 +561,7 @@ favoritesButton.addEventListener("contextmenu", (event) => {
   showToolbarButtonContextMenu(favoritesButton, "favorites");
 });
 downloadsButton.addEventListener("click", () => {
-  showAnchoredMenu(downloadsButton, "downloads");
+  window.dockedShell.openDownloadsPopup();
 });
 extensionsButton.addEventListener("click", () => {
   isEditingUrl = false;
@@ -590,7 +593,7 @@ ensureButtonIcon(backButton, "icon-back");
 ensureButtonIcon(forwardButton, "icon-forward");
 ensureButtonIcon(reloadButton, "icon-reload");
 ensureButtonIcon(homeButton, "icon-home");
-ensureButtonIcon(restoreTabButton, "icon-restore-tab");
+ensureButtonIcon(restoreTabButton, "icon-history");
 ensureButtonIcon(favoritesButton, "icon-favorites");
 ensureButtonIcon(downloadsButton, "icon-downloads");
 ensureButtonIcon(extensionsButton, "icon-extensions");

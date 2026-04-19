@@ -98,6 +98,35 @@ export interface RuntimeInfoSnapshot {
   dbusNoiseSuppressed: boolean;
 }
 
+export type DownloadRecordState =
+  | "progressing"
+  | "paused"
+  | "completed"
+  | "cancelled"
+  | "interrupted";
+
+export interface DownloadRecordSnapshot {
+  id: string;
+  fileName: string;
+  sourceUrl: string;
+  sourcePageUrl?: string;
+  savePath?: string;
+  mimeType?: string;
+  receivedBytes: number;
+  totalBytes: number;
+  state: DownloadRecordState;
+  isPaused: boolean;
+  canResume: boolean;
+  startedAt: string;
+  updatedAt: string;
+  existsOnDisk: boolean;
+}
+
+export interface DownloadsStateSnapshot {
+  theme: ThemeSnapshot;
+  items: DownloadRecordSnapshot[];
+}
+
 export interface TabSnapshot {
   id: string;
   title: string;

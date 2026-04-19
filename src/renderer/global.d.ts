@@ -1,4 +1,5 @@
 import type {
+  DownloadsPopupStateSnapshot,
   DockedShellMenuAnchor,
   DockedShellMenuSection,
   DockedShellStateSnapshot,
@@ -18,6 +19,7 @@ declare global {
       goBack: () => void;
       goForward: () => void;
       reload: () => void;
+      openDownloadsPopup: () => void;
       minimizeWindow: () => void;
       toggleMaximizeWindow: () => void;
       closeWindow: () => void;
@@ -31,6 +33,20 @@ declare global {
       ) => Promise<void>;
       onStateChanged: (
         callback: (state: DockedShellStateSnapshot) => void,
+      ) => () => void;
+    };
+
+    downloadsPopup: {
+      getState: () => Promise<DownloadsPopupStateSnapshot>;
+      openItem: (id: string) => Promise<boolean>;
+      showItemInFolder: (id: string) => Promise<boolean>;
+      retryDownload: (id: string) => Promise<boolean>;
+      clearCompleted: () => void;
+      removeItem: (id: string) => void;
+      openDownloadsPage: () => void;
+      openDownloadsSettings: () => void;
+      onStateChanged: (
+        callback: (state: DownloadsPopupStateSnapshot) => void,
       ) => () => void;
     };
   }

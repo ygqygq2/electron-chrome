@@ -1,5 +1,9 @@
 import { contextBridge, ipcRenderer } from "electron";
 
+import type {
+  DownloadsStateSnapshot,
+} from "./main/model.js";
+
 export type DockedShellGpuMode = "hardware" | "compatibility" | "limited";
 export type DockedShellThemeSource = "system" | "light" | "dark";
 export type DockedShellResolvedTheme = "light" | "dark";
@@ -75,6 +79,8 @@ export interface DockedShellMenuAnchor {
   y: number;
 }
 
+export type DownloadsPopupStateSnapshot = DownloadsStateSnapshot;
+
 contextBridge.exposeInMainWorld("dockedShell", {
   getState: () =>
     ipcRenderer.invoke(
@@ -91,6 +97,7 @@ contextBridge.exposeInMainWorld("dockedShell", {
   goBack: () => ipcRenderer.send("docked-shell:go-back"),
   goForward: () => ipcRenderer.send("docked-shell:go-forward"),
   reload: () => ipcRenderer.send("docked-shell:reload"),
+  openDownloadsPopup: () => ipcRenderer.send("docked-shell:open-downloads-popup"),
   minimizeWindow: () => ipcRenderer.send("docked-shell:minimize-window"),
   toggleMaximizeWindow: () =>
     ipcRenderer.send("docked-shell:toggle-maximize-window"),
@@ -112,5 +119,32 @@ contextBridge.exposeInMainWorld("dockedShell", {
     ) => callback(payload);
     ipcRenderer.on("docked-shell:state", listener);
     return () => ipcRenderer.removeListener("docked-shell:state", listener);
+  },
+});
+
+contextBridge.exposeInMainWorld("downloadsPopup", {
+  getState: () =>
+    ipcRenderer.invoke(
+      "downloads-popup:get-state",
+    ) as Promise<DownloadsPopupStateSnapshot>,
+  openItem: (id: string) => ipcRenderer.invoke("downloads-popup:open-item", id),
+  showItemInFolder: (id: string) =>
+    ipcRenderer.invoke("downloads-popup:show-item-in-folder", id),
+  retryDownload: (id: string) =>
+    ipcRenderer.invoke("downloads-popup:retry-download", id),
+  clearCompleted: () => ipcRenderer.send("downloads-popup:clear-completed"),
+  removeItem: (id: string) => ipcRenderer.send("downloads-popup:remove-item", id),
+  openDownloadsPage: () => ipcRenderer.send("downloads-popup:open-downloads-page"),
+  openDownloadsSettings: () =>
+    ipcRenderer.send("downloads-popup:open-downloads-settings"),
+  onStateChanged: (
+    callback: (state: DownloadsPopupStateSnapshot) => void,
+  ) => {
+    const listener = (
+      _event: Electron.IpcRendererEvent,
+      payload: DownloadsPopupStateSnapshot,
+    ) => callback(payload);
+    ipcRenderer.on("downloads:state", listener);
+    return () => ipcRenderer.removeListener("downloads:state", listener);
   },
 });

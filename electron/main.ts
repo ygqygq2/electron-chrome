@@ -9,8 +9,11 @@ import {
   globalShortcut,
   ipcMain,
   Menu,
+  session,
+  shell,
   type MenuItemConstructorOptions,
   nativeTheme,
+  type DownloadItem,
   type WebContents,
   WebContentsView,
 } from "electron";
@@ -36,6 +39,8 @@ import {
   type ToolbarContextButtonId,
   type ToolbarPreferences,
   type RuntimeInfoSnapshot,
+  type DownloadsStateSnapshot,
+  type DownloadRecordSnapshot,
   type BrowserTab,
   type BrowserShellState,
 } from "./main/model.js";
@@ -54,9 +59,13 @@ import {
 } from "./main/local-persistence.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const MAX_DOWNLOAD_RECORDS = 120;
 const DESKTOP_CHROME_USER_AGENT = buildDesktopChromeUserAgent();
 const dockedWindowStateById = new Map<number, BrowserShellState>();
 const FAVICON_ACCEPT_HEADER = "image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8";
+let downloadsPopupWindow: BrowserWindow | null = null;
+let lastFocusedShellWindowId: number | null = null;
+let downloadRecords: DownloadRecordSnapshot[] = [];
 
 function persistBrowserHistory() {
   browserHistory = browserHistory.slice(0, MAX_HISTORY_ENTRIES);
@@ -89,6 +98,23 @@ function updateRecentHistoryTitle(url: string, title: string) {
 
   targetEntry.title = title.trim();
   persistBrowserHistory();
+}
+
+function clearBrowserHistory() {
+  browserHistory = [];
+  persistBrowserHistory();
+}
+
+function removeBrowserHistoryEntry(id: string) {
+  const nextHistory = browserHistory.filter((entry) => entry.id !== id);
+  const changed = nextHistory.length !== browserHistory.length;
+
+  if (changed) {
+    browserHistory = nextHistory;
+    persistBrowserHistory();
+  }
+
+  return changed;
 }
 
 
@@ -193,6 +219,7 @@ function createTabId() {
 
 
 import {
+  getHistoryActionFromUrl,
   getSettingsSectionFromUrl,
   isSettingsUrl,
   isDownloadsUrl,
@@ -205,11 +232,139 @@ import {
 
 import {
   createInternalPageDataUrl,
+  createDownloadsPopupDataUrl,
 } from "./main/page-html.js";
 
+function createDownloadId() {
+  return `download-${Date.now()}-${Math.random().toString(16).slice(2, 8)}`;
+}
+
+function getDownloadState(item: DownloadItem): DownloadRecordSnapshot["state"] {
+  if (item.isPaused()) {
+    return "paused";
+  }
+
+  const state = item.getState();
+  return state === "completed" || state === "cancelled" || state === "interrupted"
+    ? state
+    : "progressing";
+}
+
+function fileExistsOnDisk(
+  savePath: string | undefined,
+  state: DownloadRecordSnapshot["state"],
+) {
+  return typeof savePath === "string" && state === "completed" && fs.existsSync(savePath);
+}
+
+function getDownloadsThemeSnapshot() {
+  return getThemeSnapshot(runtimePreferences.themeSource);
+}
+
+function getDownloadsStateSnapshot(): DownloadsStateSnapshot {
+  return {
+    theme: getDownloadsThemeSnapshot(),
+    items: downloadRecords.map((record) => ({
+      ...record,
+      existsOnDisk: fileExistsOnDisk(record.savePath, record.state),
+    })),
+  };
+}
+
+function notifyDownloadsPopupStateChanged() {
+  if (
+    !downloadsPopupWindow ||
+    downloadsPopupWindow.isDestroyed() ||
+    downloadsPopupWindow.webContents.isDestroyed()
+  ) {
+    return;
+  }
+
+  downloadsPopupWindow.setBackgroundColor(
+    getWindowBackgroundColor(getDownloadsThemeSnapshot().resolved),
+  );
+  downloadsPopupWindow.webContents.send(
+    "downloads:state",
+    getDownloadsStateSnapshot(),
+  );
+}
+
+function upsertDownloadRecord(record: DownloadRecordSnapshot) {
+  const targetIndex = downloadRecords.findIndex((item) => item.id === record.id);
+
+  if (targetIndex >= 0) {
+    downloadRecords.splice(targetIndex, 1, record);
+    return;
+  }
+
+  downloadRecords.unshift(record);
+  if (downloadRecords.length > MAX_DOWNLOAD_RECORDS) {
+    downloadRecords.length = MAX_DOWNLOAD_RECORDS;
+  }
+}
+
+function syncDownloadRecord(
+  id: string,
+  item: DownloadItem,
+  sourcePageUrl: string,
+  forcedState?: DownloadRecordSnapshot["state"],
+) {
+  const previous = downloadRecords.find((record) => record.id === id);
+  const savePath = item.getSavePath() || previous?.savePath;
+  const state = forcedState ?? getDownloadState(item);
+  const fileName = path.basename(
+    savePath || item.getFilename() || previous?.fileName || "未命名下载",
+  );
+
+  upsertDownloadRecord({
+    id,
+    fileName,
+    sourceUrl: item.getURL() || previous?.sourceUrl || "",
+    sourcePageUrl: sourcePageUrl || previous?.sourcePageUrl,
+    savePath,
+    mimeType: item.getMimeType() || previous?.mimeType,
+    receivedBytes: item.getReceivedBytes(),
+    totalBytes: item.getTotalBytes(),
+    state,
+    isPaused: item.isPaused(),
+    canResume: item.canResume(),
+    startedAt: previous?.startedAt ?? new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+    existsOnDisk: fileExistsOnDisk(savePath, state),
+  });
+}
+
+function getLastFocusedShellWindow() {
+  const rememberedWindow = lastFocusedShellWindowId
+    ? BrowserWindow.fromId(lastFocusedShellWindowId)
+    : null;
+
+  if (rememberedWindow && dockedWindowStateById.has(rememberedWindow.id)) {
+    return rememberedWindow;
+  }
+
+  const focusedWindow = BrowserWindow.getFocusedWindow();
+  if (focusedWindow && dockedWindowStateById.has(focusedWindow.id)) {
+    return focusedWindow;
+  }
+
+  return (
+    BrowserWindow.getAllWindows().find((win) => dockedWindowStateById.has(win.id)) ??
+    null
+  );
+}
 
 function openTabUrl(tab: BrowserTab, url: string, state: BrowserShellState) {
-  const nextUrl = getInternalPageDisplayUrl(url || DEFAULT_URL);
+  const rawUrl = url || DEFAULT_URL;
+  const historyAction = getHistoryActionFromUrl(rawUrl);
+
+  if (historyAction?.type === "clear") {
+    clearBrowserHistory();
+  } else if (historyAction?.type === "delete") {
+    removeBrowserHistoryEntry(historyAction.id);
+  }
+
+  const nextUrl = getInternalPageDisplayUrl(rawUrl);
 
   tab.url = nextUrl;
   if (isInternalPageUrl(nextUrl)) {
@@ -826,14 +981,147 @@ function buildDownloadsMenuTemplate(
 ): MenuItemConstructorOptions[] {
   return [
     {
+      label: "打开下载窗口",
+      click: () => {
+        void openDownloadsPopup(win);
+      },
+    },
+    {
       label: "打开下载页",
       click: () => openDownloadsTab(win, state),
     },
-    {
-      label: "当前暂无下载任务",
-      enabled: false,
-    },
   ];
+}
+
+async function openDownloadsPopup(parentWindow?: BrowserWindow | null) {
+  if (downloadsPopupWindow && !downloadsPopupWindow.isDestroyed()) {
+    if (downloadsPopupWindow.isMinimized()) {
+      downloadsPopupWindow.restore();
+    }
+    downloadsPopupWindow.focus();
+    notifyDownloadsPopupStateChanged();
+    return downloadsPopupWindow;
+  }
+
+  downloadsPopupWindow = new BrowserWindow({
+    width: 1120,
+    height: 760,
+    minWidth: 860,
+    minHeight: 560,
+    parent: parentWindow ?? getLastFocusedShellWindow() ?? undefined,
+    title: "下载",
+    autoHideMenuBar: true,
+    show: false,
+    backgroundColor: getWindowBackgroundColor(getDownloadsThemeSnapshot().resolved),
+    webPreferences: {
+      preload: path.join(__dirname, "preload.mjs"),
+      contextIsolation: true,
+      nodeIntegration: false,
+      sandbox: false,
+    },
+  });
+
+  downloadsPopupWindow.on("closed", () => {
+    downloadsPopupWindow = null;
+  });
+
+  downloadsPopupWindow.webContents.on("did-finish-load", () => {
+    notifyDownloadsPopupStateChanged();
+  });
+
+  await downloadsPopupWindow.loadURL(createDownloadsPopupDataUrl());
+  downloadsPopupWindow.once("ready-to-show", () => {
+    downloadsPopupWindow?.show();
+    notifyDownloadsPopupStateChanged();
+  });
+
+  return downloadsPopupWindow;
+}
+
+function openDownloadItemById(id: string) {
+  const record = downloadRecords.find((item) => item.id === id);
+
+  if (!record?.savePath || !fs.existsSync(record.savePath)) {
+    return Promise.resolve(false);
+  }
+
+  return shell.openPath(record.savePath).then((result) => result === "");
+}
+
+function showDownloadItemInFolderById(id: string) {
+  const record = downloadRecords.find((item) => item.id === id);
+
+  if (!record?.savePath) {
+    return false;
+  }
+
+  if (fs.existsSync(record.savePath)) {
+    shell.showItemInFolder(record.savePath);
+    return true;
+  }
+
+  const folderPath = path.dirname(record.savePath);
+  if (fs.existsSync(folderPath)) {
+    void shell.openPath(folderPath);
+    return true;
+  }
+
+  return false;
+}
+
+function retryDownloadItemById(id: string) {
+  const record = downloadRecords.find((item) => item.id === id);
+  const hostWindow = getLastFocusedShellWindow();
+  const state = hostWindow ? dockedWindowStateById.get(hostWindow.id) : null;
+  const targetWebContents = state ? getActivePageView(state)?.webContents : null;
+
+  if (!record?.sourceUrl || !targetWebContents) {
+    return false;
+  }
+
+  targetWebContents.downloadURL(record.sourceUrl);
+  return true;
+}
+
+function clearCompletedDownloadRecords() {
+  downloadRecords = downloadRecords.filter((record) => record.state !== "completed");
+  notifyDownloadsPopupStateChanged();
+}
+
+function removeDownloadRecord(id: string) {
+  const target = downloadRecords.find((record) => record.id === id);
+
+  if (!target || target.state === "progressing" || target.state === "paused") {
+    return;
+  }
+
+  downloadRecords = downloadRecords.filter((record) => record.id !== id);
+  notifyDownloadsPopupStateChanged();
+}
+
+function registerDownloadsSessionHandlers() {
+  session.defaultSession.on("will-download", (_event, item, webContents) => {
+    const downloadId = createDownloadId();
+    const sourcePageUrl = webContents.getURL();
+
+    syncDownloadRecord(downloadId, item, sourcePageUrl);
+    notifyDownloadsPopupStateChanged();
+
+    item.on("updated", () => {
+      syncDownloadRecord(downloadId, item, sourcePageUrl);
+      notifyDownloadsPopupStateChanged();
+    });
+
+    item.once("done", (_doneEvent, state) => {
+      const finalState = item.isPaused()
+        ? "paused"
+        : state === "completed" || state === "cancelled" || state === "interrupted"
+          ? state
+          : undefined;
+      syncDownloadRecord(downloadId, item, sourcePageUrl, finalState);
+      notifyDownloadsPopupStateChanged();
+    });
+  });
 }
 
 function buildFavoritesMenuTemplate(): MenuItemConstructorOptions[] {
@@ -906,7 +1194,7 @@ function buildToolbarButtonContextMenuTemplate(
       },
     },
     {
-      label: "显示恢复关闭标签按钮",
+      label: "显示历史记录按钮",
       type: "checkbox",
       checked: toolbarPreferences.restoreClosedTab.visible,
       click: () => {
@@ -1483,6 +1771,9 @@ function createDockedWindow() {
   attachDevToolsToggleShortcut(win.webContents, win, state);
   attachDevToolsToggleShortcut(devtoolsView.webContents, win, state);
 
+  win.on("focus", () => {
+    lastFocusedShellWindowId = win.id;
+  });
   win.on("resize", () => layoutViews(win, state));
   win.on("maximize", () => {
     state.isMaximized = true;
@@ -1495,6 +1786,9 @@ function createDockedWindow() {
     notifyStateChanged(win, state);
   });
   win.on("closed", () => {
+    if (lastFocusedShellWindowId === win.id) {
+      lastFocusedShellWindowId = null;
+    }
     dockedWindowStateById.delete(win.id);
     for (const tab of state.tabs) {
       try {
@@ -1643,6 +1937,11 @@ ipcMain.on("docked-shell:reload", (event) => {
   getActivePageView(state)?.webContents.reload();
 });
 
+ipcMain.on("docked-shell:open-downloads-popup", (event) => {
+  const win = BrowserWindow.fromWebContents(event.sender);
+  void openDownloadsPopup(win);
+});
+
 ipcMain.on("docked-shell:minimize-window", (event) => {
   const win = BrowserWindow.fromWebContents(event.sender);
   win?.minimize();
@@ -1709,7 +2008,54 @@ ipcMain.handle(
   },
 );
 
+ipcMain.handle("downloads-popup:get-state", () => getDownloadsStateSnapshot());
+
+ipcMain.handle("downloads-popup:open-item", (_event, id: string) => {
+  return openDownloadItemById(id);
+});
+
+ipcMain.handle("downloads-popup:show-item-in-folder", (_event, id: string) => {
+  return showDownloadItemInFolderById(id);
+});
+
+ipcMain.handle("downloads-popup:retry-download", (_event, id: string) => {
+  return retryDownloadItemById(id);
+});
+
+ipcMain.on("downloads-popup:clear-completed", () => {
+  clearCompletedDownloadRecords();
+});
+
+ipcMain.on("downloads-popup:remove-item", (_event, id: string) => {
+  removeDownloadRecord(id);
+});
+
+ipcMain.on("downloads-popup:open-downloads-page", () => {
+  const hostWindow = getLastFocusedShellWindow();
+  const state = hostWindow ? dockedWindowStateById.get(hostWindow.id) : null;
+  if (!hostWindow || !state) {
+    return;
+  }
+
+  openDownloadsTab(hostWindow, state);
+});
+
+ipcMain.on("downloads-popup:open-downloads-settings", () => {
+  const hostWindow = getLastFocusedShellWindow();
+  const state = hostWindow ? dockedWindowStateById.get(hostWindow.id) : null;
+  if (!hostWindow || !state) {
+    return;
+  }
+
+  const targetTab = openSettingsTab(hostWindow, state);
+  if (targetTab) {
+    openTabUrl(targetTab, `${INTERNAL_SETTINGS_URL}/downloadSetting`, state);
+    notifyStateChanged(hostWindow, state);
+  }
+});
+
 app.whenReady().then(() => {
+  registerDownloadsSessionHandlers();
   registerGlobalShortcuts();
   updateRuntimeInfoFromGpuStatus();
   createDockedWindow();
@@ -1737,6 +2083,8 @@ nativeTheme.on("updated", () => {
     refreshInternalPagesForTheme(state);
     notifyStateChanged(win, state);
   }
+
+  notifyDownloadsPopupStateChanged();
 });
 
 app.on("gpu-info-update", () => {

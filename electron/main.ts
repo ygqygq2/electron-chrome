@@ -44,6 +44,13 @@ import {
   type BrowserTab,
   type BrowserShellState,
 } from "./main/model.js";
+import { createFavoritesController } from "./main/favorites-controller.js";
+import {
+  buildFavoritesMenuTemplate,
+  handleFavoritesUrlAction,
+  openFavoritesTab,
+  refreshFavoritesTabs,
+} from "./main/favorites-shell.js";
 
 import {
   normalizeThemeSource,
@@ -51,12 +58,29 @@ import {
   normalizeToolbarPreferences,
   getThemeSnapshot,
   readBrowserHistory,
+  readFavoritesState,
   writeBrowserHistory,
   createHistoryEntryId,
   shouldRecordHistoryUrl,
   readRuntimePreferences,
   writeRuntimePreferences,
 } from "./main/local-persistence.js";
+import {
+  getHistoryActionFromUrl,
+  getInternalPageDisplayUrl,
+  getSettingsSectionFromUrl,
+  isDownloadsUrl,
+  isExtensionsUrl,
+  isFavoritesUrl,
+  isHistoryUrl,
+  isInternalPageUrl,
+  isInternalRenderedUrl,
+  isSettingsUrl,
+} from "./main/url-utils.js";
+import {
+  createDownloadsPopupDataUrl,
+  createInternalPageDataUrl,
+} from "./main/page-html.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const MAX_DOWNLOAD_RECORDS = 120;
@@ -82,6 +106,7 @@ function recordHistoryVisit(url: string, title: string) {
     title: title.trim() || url,
     url,
     visitedAt: new Date().toISOString(),
+    closedAt: undefined,
   });
   persistBrowserHistory();
 }
@@ -91,12 +116,27 @@ function updateRecentHistoryTitle(url: string, title: string) {
     return;
   }
 
-  const targetEntry = browserHistory.find((entry) => entry.url === url);
+  const targetEntry = browserHistory.find((entry) => entry.url === url && !entry.closedAt);
   if (!targetEntry || targetEntry.title === title.trim()) {
     return;
   }
 
   targetEntry.title = title.trim();
+  persistBrowserHistory();
+}
+
+function markBrowserHistoryClosed(url: string) {
+  if (!shouldRecordHistoryUrl(url)) {
+    return;
+  }
+
+  const targetEntry = browserHistory.find((entry) => entry.url === url && !entry.closedAt);
+
+  if (!targetEntry) {
+    return;
+  }
+
+  targetEntry.closedAt = new Date().toISOString();
   persistBrowserHistory();
 }
 
@@ -132,6 +172,7 @@ function hasDxgAdapter() {
 
 const runtimePreferences = readRuntimePreferences();
 let browserHistory = readBrowserHistory();
+const favoritesController = createFavoritesController(readFavoritesState());
 nativeTheme.themeSource = runtimePreferences.themeSource;
 const shouldUsePersistedCompatibilityGpu =
   runtimePreferences.preferCompatibilityGpu;
@@ -216,24 +257,6 @@ function isDevToolsToggleShortcut(input: Electron.Input) {
 function createTabId() {
   return `tab-${Date.now()}-${Math.random().toString(16).slice(2, 8)}`;
 }
-
-
-import {
-  getHistoryActionFromUrl,
-  getSettingsSectionFromUrl,
-  isSettingsUrl,
-  isDownloadsUrl,
-  isExtensionsUrl,
-  isHistoryUrl,
-  isInternalPageUrl,
-  isInternalRenderedUrl,
-  getInternalPageDisplayUrl,
-} from "./main/url-utils.js";
-
-import {
-  createInternalPageDataUrl,
-  createDownloadsPopupDataUrl,
-} from "./main/page-html.js";
 
 function createDownloadId() {
   return `download-${Date.now()}-${Math.random().toString(16).slice(2, 8)}`;
@@ -354,14 +377,37 @@ function getLastFocusedShellWindow() {
   );
 }
 
+function getFavoritesShellDeps() {
+  return {
+    controller: favoritesController,
+    activateTab,
+    createTab,
+    getActiveTab,
+    isInternalPageUrl,
+    navigateActiveTab,
+    notifyStateChanged,
+    openTabUrl,
+    windowStates: dockedWindowStateById,
+  };
+}
+
 function openTabUrl(tab: BrowserTab, url: string, state: BrowserShellState) {
   const rawUrl = url || DEFAULT_URL;
   const historyAction = getHistoryActionFromUrl(rawUrl);
+  const favoritesChanged = handleFavoritesUrlAction(
+    rawUrl,
+    state,
+    getFavoritesShellDeps(),
+  );
 
   if (historyAction?.type === "clear") {
     clearBrowserHistory();
   } else if (historyAction?.type === "delete") {
     removeBrowserHistoryEntry(historyAction.id);
+  }
+
+  if (favoritesChanged) {
+    refreshFavoritesTabs(getFavoritesShellDeps());
   }
 
   const nextUrl = getInternalPageDisplayUrl(rawUrl);
@@ -375,11 +421,19 @@ function openTabUrl(tab: BrowserTab, url: string, state: BrowserShellState) {
         ? "下载"
         : isExtensionsUrl(nextUrl)
           ? "扩展"
+          : isFavoritesUrl(nextUrl)
+            ? "收藏夹"
           : isHistoryUrl(nextUrl)
             ? "历史记录"
           : "内部页面";
     void tab.pageView.webContents.loadURL(
-      createInternalPageDataUrl(nextUrl, state.theme, state, browserHistory),
+      createInternalPageDataUrl(
+        nextUrl,
+        state.theme,
+        state,
+        browserHistory,
+        favoritesController.getState(),
+      ),
     );
     return;
   }
@@ -388,9 +442,19 @@ function openTabUrl(tab: BrowserTab, url: string, state: BrowserShellState) {
 }
 
 function getStateSnapshot(state: BrowserShellState) {
+  const activeTab = getActiveTab(state);
+  const currentPageCanFavorite = Boolean(
+    activeTab?.url && !isInternalPageUrl(activeTab.url),
+  );
+  const currentPageIsFavorite = Boolean(
+    currentPageCanFavorite && activeTab?.url && favoritesController.hasUrl(activeTab.url),
+  );
+
   return {
     activeTabId: state.activeTabId,
     canRestoreClosedTab: state.closedTabHistory.length > 0,
+    currentPageCanFavorite,
+    currentPageIsFavorite,
     devtoolsVisible: state.devtoolsVisible,
     dockPosition: state.dockPosition,
     runtimeInfo: state.runtimeInfo,
@@ -409,6 +473,34 @@ function getStateSnapshot(state: BrowserShellState) {
       isMaximized: state.isMaximized,
     },
   };
+}
+
+function quickFavoriteActiveTab(win: BrowserWindow, state: BrowserShellState) {
+  const activeTab = getActiveTab(state);
+
+  if (!activeTab?.url || isInternalPageUrl(activeTab.url)) {
+    notifyStateChanged(win, state);
+    return false;
+  }
+
+  if (favoritesController.hasUrl(activeTab.url)) {
+    notifyStateChanged(win, state);
+    return false;
+  }
+
+  const addedEntryId = favoritesController.addEntry(
+    activeTab.title,
+    activeTab.url,
+    "收藏栏",
+  );
+
+  if (!addedEntryId) {
+    notifyStateChanged(win, state);
+    return false;
+  }
+
+  refreshFavoritesTabs(getFavoritesShellDeps());
+  return true;
 }
 
 function sendStateToShell(win: BrowserWindow, state: BrowserShellState) {
@@ -636,6 +728,8 @@ function setThemeSource(nextThemeSource: ThemeSource) {
     refreshInternalPagesForTheme(state);
     notifyStateChanged(win, state);
   }
+
+  notifyDownloadsPopupStateChanged();
 }
 
 function updateRuntimeInfoFromGpuStatus() {
@@ -1124,19 +1218,6 @@ function registerDownloadsSessionHandlers() {
   });
 }
 
-function buildFavoritesMenuTemplate(): MenuItemConstructorOptions[] {
-  return [
-    {
-      label: "收藏夹功能开发中",
-      enabled: false,
-    },
-    {
-      label: "后续将在这里接入书签列表与管理能力",
-      enabled: false,
-    },
-  ];
-}
-
 function buildToolbarButtonContextMenuTemplate(
   buttonId: ToolbarContextButtonId,
 ): MenuItemConstructorOptions[] {
@@ -1426,6 +1507,7 @@ function closeTab(win: BrowserWindow, state: BrowserShellState, tabId: string) {
       url: tab.url,
     });
     state.closedTabHistory = state.closedTabHistory.slice(-12);
+    markBrowserHistoryClosed(tab.url);
   }
 
   if (state.attachedTabId === tab.id) {
@@ -1497,6 +1579,10 @@ function buildFileMenuTemplate(
       click: () => openExtensionsTab(win, state),
     },
     {
+      label: "收藏夹",
+      click: () => openFavoritesTab(win, state, getFavoritesShellDeps()),
+    },
+    {
       label: "下载",
       click: () => openDownloadsTab(win, state),
     },
@@ -1539,6 +1625,10 @@ function buildAppMenuTemplate(
     {
       label: "扩展",
       click: () => openExtensionsTab(win, state),
+    },
+    {
+      label: "收藏夹",
+      click: () => openFavoritesTab(win, state, getFavoritesShellDeps()),
     },
     {
       label: "下载",
@@ -1677,7 +1767,7 @@ function showMenuSection(
         : section === "downloads"
           ? buildDownloadsMenuTemplate(win, state)
           : section === "favorites"
-            ? buildFavoritesMenuTemplate()
+                ? buildFavoritesMenuTemplate(win, state, getFavoritesShellDeps())
             : section === "debug"
               ? buildDebugMenuTemplate(win, state)
               : buildAppMenuTemplate(win, state);
@@ -1754,6 +1844,8 @@ function createDockedWindow() {
     devtoolsView,
     devtoolsVisible: false,
     dockPosition: DOCK_POSITIONS.bottom,
+    currentPageCanFavorite: false,
+    currentPageIsFavorite: false,
     runtimeInfo,
     toolbarPreferences: cloneToolbarPreferences(
       runtimePreferences.toolbarPreferences,
@@ -1910,6 +2002,17 @@ ipcMain.on("docked-shell:open-home", (event) => {
   navigateActiveTab(state, DEFAULT_URL);
 });
 
+ipcMain.on("docked-shell:quick-favorite-current-page", (event) => {
+  const win = BrowserWindow.fromWebContents(event.sender);
+  const state = win ? dockedWindowStateById.get(win.id) : null;
+
+  if (!win || !state) {
+    return;
+  }
+
+  quickFavoriteActiveTab(win, state);
+});
+
 ipcMain.on("docked-shell:go-back", (event) => {
   const win = BrowserWindow.fromWebContents(event.sender);
   const state = win ? dockedWindowStateById.get(win.id) : null;
@@ -2009,6 +2112,10 @@ ipcMain.handle(
 );
 
 ipcMain.handle("downloads-popup:get-state", () => getDownloadsStateSnapshot());
+
+ipcMain.on("downloads-popup:set-theme-source", (_event, themeSource: ThemeSource) => {
+  setThemeSource(themeSource);
+});
 
 ipcMain.handle("downloads-popup:open-item", (_event, id: string) => {
   return openDownloadItemById(id);

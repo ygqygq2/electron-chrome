@@ -151,6 +151,8 @@ let currentState: DockedShellStateSnapshot = {
   tabs: [],
   activeTabId: null,
   canRestoreClosedTab: false,
+  currentPageCanFavorite: false,
+  currentPageIsFavorite: false,
   devtoolsVisible: false,
   dockPosition: "bottom",
   theme: {
@@ -358,6 +360,23 @@ function updateWindowControls() {
   );
 }
 
+function renderFavoritesButtonState() {
+  favoritesButton.classList.toggle(
+    "is-favorite",
+    currentState.currentPageIsFavorite,
+  );
+  favoritesButton.disabled = !currentState.currentPageCanFavorite;
+
+  const label = !currentState.currentPageCanFavorite
+    ? "当前页面不可收藏"
+    : currentState.currentPageIsFavorite
+      ? "当前页面已收藏"
+      : "收藏当前页面";
+
+  favoritesButton.title = label;
+  favoritesButton.setAttribute("aria-label", label);
+}
+
 function toggleToolbarButtonVisibility(
   button: HTMLButtonElement,
   visible: boolean,
@@ -480,6 +499,7 @@ function applyState(state: DockedShellStateSnapshot | null) {
   renderToolbarPreferences();
   renderTabs();
   updateNavigationButtons();
+  renderFavoritesButtonState();
   updateStatus();
   updateWindowControls();
 }
@@ -554,7 +574,11 @@ restoreTabButton.addEventListener("contextmenu", (event) => {
   showToolbarButtonContextMenu(restoreTabButton, "restoreClosedTab");
 });
 favoritesButton.addEventListener("click", () => {
-  showAnchoredMenu(favoritesButton, "favorites");
+  if (!currentState.currentPageCanFavorite || currentState.currentPageIsFavorite) {
+    return;
+  }
+
+  window.dockedShell.quickFavoriteCurrentPage();
 });
 favoritesButton.addEventListener("contextmenu", (event) => {
   event.preventDefault();

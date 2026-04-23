@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>electron-chrome 收藏管理页原型</title>
+    <style>
+      :root {
+        font-family: "Segoe UI", "PingFang SC", sans-serif;
+        --bg: #f7f9fc;
+        --panel: #ffffff;
+        --line: #e5eaf0;
+        --text: #232a31;
+        --muted: #7a8796;
+        --soft: #f2f6fb;
+        --accent: #3e8bff;
+      }
+      * { box-sizing: border-box; }
+      body { margin: 0; background: var(--bg); color: var(--text); }
+      .page { display: grid; grid-template-columns: 252px 1fr; min-height: 100vh; }
+      .sidebar { padding: 20px; background: var(--panel); border-right: 1px solid var(--line); }
+      .content { padding: 24px; }
+      .title { margin: 0 0 14px; font-size: 32px; color: #687789; }
+      .search, .button { height: 36px; border-radius: 8px; border: 1px solid var(--line); }
+      .search { width: 100%; padding: 0 12px; }
+      .button { padding: 0 14px; background: #fff; }
+      .button.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+      .folder-list { margin-top: 16px; display: grid; gap: 8px; }
+      .folder-item { display:flex; justify-content:space-between; padding: 10px 12px; border-radius: 8px; background: var(--soft); }
+      .folder-item.active { background: var(--accent); color: #fff; }
+      .toolbar { display:flex; justify-content:space-between; gap: 12px; align-items: center; margin-bottom: 18px; }
+      .toolbar-right { display:flex; gap: 10px; }
+      .stats { display:inline-flex; padding: 10px 14px; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; color: var(--muted); margin-bottom: 16px; }
+      .table { overflow:hidden; border: 1px solid var(--line); border-radius: 14px; background: var(--panel); }
+      .header, .row { display:grid; grid-template-columns: 1.1fr 1fr 180px 240px; gap: 14px; align-items:center; padding: 14px 18px; }
+      .header { background: var(--soft); color: var(--muted); font-size: 12px; text-transform: uppercase; }
+      .row { border-top: 1px solid var(--line); }
+      .actions { display:flex; gap: 8px; flex-wrap:wrap; justify-content:flex-end; }
+      .hint { color: var(--muted); line-height: 1.7; }
+    </style>
+  </head>
+  <body>
+    <main class="page">
+      <aside class="sidebar">
+        <h1 class="title">收藏夹</h1>
+        <input class="search" placeholder="筛选收藏" />
+        <div style="display:grid; gap:8px; margin-top:14px;">
+          <button class="button">收藏当前标签页</button>
+          <button class="button">新建文件夹</button>
+        </div>
+        <div class="folder-list">
+          <div class="folder-item active"><span>收藏栏</span><span>12</span></div>
+          <div class="folder-item"><span>文档资料</span><span>6</span></div>
+          <div class="folder-item"><span>项目相关</span><span>8</span></div>
+          <div class="folder-item"><span>项目相关/设计参考</span><span>3</span></div>
+        </div>
+      </aside>
+      <section class="content">
+        <div class="toolbar">
+          <div>
+            <h2 style="margin:0; font-size:24px;">收藏栏</h2>
+            <p class="hint">轻量收藏管理页：先把收藏、打开、编辑、删除和基础文件夹整理做顺手。</p>
+          </div>
+          <div class="toolbar-right">
+            <input class="search" style="width:280px;" placeholder="搜索标题或网址" />
+            <button class="button primary">新建收藏</button>
+          </div>
+        </div>
+        <div class="stats">共 26 条收藏 · 当前文件夹 12 条 · 当前显示 12 条</div>
+        <div class="table">
+          <div class="header">
+            <span>名称</span>
+            <span>网址</span>
+            <span>文件夹</span>
+            <span style="text-align:right;">操作</span>
+          </div>
+          <div class="row">
+            <span>GitHub</span>
+            <span>https://github.com/</span>
+            <span>收藏栏</span>
+            <div class="actions">
+              <button class="button">打开</button>
+              <button class="button">新标签</button>
+              <button class="button">编辑</button>
+              <button class="button">删除</button>
+            </div>
+          </div>
+          <div class="row">
+            <span>Bilibili</span>
+            <span>https://www.bilibili.com/</span>
+            <span>收藏栏</span>
+            <div class="actions">
+              <button class="button">打开</button>
+              <button class="button">新标签</button>
+              <button class="button">编辑</button>
+              <button class="button">删除</button>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </body>
+</html>

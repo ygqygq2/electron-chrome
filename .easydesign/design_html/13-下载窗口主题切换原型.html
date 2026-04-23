@@ -1,0 +1,233 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>下载窗口主题切换原型</title>
+    <style>
+      :root {
+        color-scheme: light;
+        font-family: "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+        --bg: #eef2f7;
+        --panel: #ffffff;
+        --line: #dbe3ec;
+        --text: #1f2937;
+        --muted: #728196;
+        --accent: #2563eb;
+      }
+
+      html[data-theme="dark"] {
+        color-scheme: dark;
+        --bg: #11161d;
+        --panel: #1a212b;
+        --line: #2a3542;
+        --text: #e8eef6;
+        --muted: #92a1b3;
+        --accent: #72a7ff;
+      }
+
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        min-height: 100vh;
+        padding: 28px;
+        color: var(--text);
+        background: linear-gradient(180deg, var(--bg), color-mix(in srgb, var(--bg) 88%, #ffffff));
+      }
+
+      .window {
+        max-width: 980px;
+        margin: 0 auto;
+        overflow: hidden;
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 22px;
+        box-shadow: 0 18px 48px rgba(15, 23, 42, 0.12);
+      }
+
+      .toolbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        padding: 18px 20px;
+        border-bottom: 1px solid var(--line);
+      }
+
+      .title h1 {
+        margin: 0;
+        font-size: 28px;
+      }
+
+      .title p {
+        margin: 6px 0 0;
+        color: var(--muted);
+      }
+
+      .actions {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+
+      .stats {
+        color: var(--muted);
+        font-size: 13px;
+      }
+
+      .search,
+      .theme-toggle-button {
+        height: 40px;
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        background: var(--panel);
+      }
+
+      .search {
+        width: 280px;
+        padding: 0 14px;
+        color: var(--text);
+      }
+
+      .theme-toggle {
+        position: relative;
+      }
+
+      .theme-toggle-button {
+        position: relative;
+        width: 40px;
+        padding: 0;
+        color: var(--muted);
+        cursor: pointer;
+      }
+
+      .theme-icon {
+        position: absolute;
+        inset: 50% auto auto 50%;
+        width: 18px;
+        height: 18px;
+        transform: translate(-50%, -50%);
+        transition: transform 180ms ease, opacity 180ms ease;
+      }
+
+      .theme-icon.sun { opacity: 1; }
+      .theme-icon.moon { opacity: 0; transform: translate(-50%, -50%) rotate(90deg) scale(0.4); }
+      html[data-theme="dark"] .theme-icon.sun { opacity: 0; transform: translate(-50%, -50%) rotate(-90deg) scale(0.4); }
+      html[data-theme="dark"] .theme-icon.moon { opacity: 1; transform: translate(-50%, -50%) rotate(0) scale(1); }
+
+      .theme-menu {
+        position: absolute;
+        top: calc(100% + 8px);
+        right: 0;
+        min-width: 148px;
+        padding: 6px;
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        box-shadow: 0 12px 28px rgba(15, 23, 42, 0.16);
+      }
+
+      .theme-menu[hidden] { display: none; }
+
+      .theme-menu-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        width: 100%;
+        min-height: 36px;
+        padding: 0 10px;
+        color: var(--text);
+        cursor: pointer;
+        background: transparent;
+        border: 0;
+        border-radius: 8px;
+      }
+
+      .theme-menu-item[data-active="true"] {
+        color: var(--accent);
+        font-weight: 600;
+        background: color-mix(in srgb, var(--accent) 12%, var(--panel));
+      }
+
+      .demo-content {
+        padding: 22px 20px 28px;
+        color: var(--muted);
+        line-height: 1.8;
+      }
+    </style>
+  </head>
+  <body>
+    <section class="window">
+      <header class="toolbar">
+        <div class="title">
+          <h1>下载</h1>
+          <p>下载弹窗顶部增加一个与参考项目一致的主题切换按钮。</p>
+        </div>
+        <div class="actions">
+          <div class="stats">共 12 项 · 进行中 2 · 已完成 8</div>
+          <div class="theme-toggle">
+            <button id="themeToggleButton" class="theme-toggle-button" type="button" aria-haspopup="menu" aria-expanded="false" title="切换主题">
+              <svg class="theme-icon sun" viewBox="0 0 24 24" aria-hidden="true">
+                <circle cx="12" cy="12" r="4.2" fill="currentColor"></circle>
+                <path d="M12 2.6v2.2M12 19.2v2.2M4.6 12H2.4M21.6 12h-2.2M5.9 5.9l1.6 1.6M16.5 16.5l1.6 1.6M18.1 5.9l-1.6 1.6M7.5 16.5l-1.6 1.6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"></path>
+              </svg>
+              <svg class="theme-icon moon" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M20.2 14.1a8.4 8.4 0 1 1-10.3-10.3 7.1 7.1 0 0 0 10.3 10.3Z" fill="currentColor"></path>
+              </svg>
+            </button>
+            <div id="themeMenu" class="theme-menu" role="menu" hidden>
+              <button class="theme-menu-item" type="button" data-theme-source="light"><span>浅色</span><span>✓</span></button>
+              <button class="theme-menu-item" type="button" data-theme-source="dark"><span>深色</span><span>✓</span></button>
+              <button class="theme-menu-item" type="button" data-theme-source="system"><span>跟随系统</span><span>✓</span></button>
+            </div>
+          </div>
+          <input class="search" placeholder="搜索下载内容" />
+        </div>
+      </header>
+      <div class="demo-content">
+        点击右上角主题按钮可切换浅色 / 深色 / 跟随系统，用于验证按钮位置、图标过渡和菜单样式。
+      </div>
+    </section>
+
+    <script>
+      const root = document.documentElement;
+      const toggleButton = document.getElementById('themeToggleButton');
+      const menu = document.getElementById('themeMenu');
+      let source = 'light';
+
+      function resolvedTheme() {
+        if (source === 'system') {
+          return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        }
+        return source;
+      }
+
+      function render() {
+        root.dataset.theme = resolvedTheme();
+        menu.querySelectorAll('[data-theme-source]').forEach((item) => {
+          item.dataset.active = item.getAttribute('data-theme-source') === source ? 'true' : 'false';
+        });
+      }
+
+      toggleButton.addEventListener('click', (event) => {
+        event.stopPropagation();
+        menu.hidden = !menu.hidden;
+        toggleButton.setAttribute('aria-expanded', menu.hidden ? 'false' : 'true');
+      });
+
+      menu.addEventListener('click', (event) => {
+        const button = event.target.closest('[data-theme-source]');
+        if (!button) return;
+        source = button.getAttribute('data-theme-source') || 'light';
+        menu.hidden = true;
+        render();
+      });
+
+      document.addEventListener('click', () => {
+        menu.hidden = true;
+      });
+
+      render();
+    </script>
+  </body>
+</html>

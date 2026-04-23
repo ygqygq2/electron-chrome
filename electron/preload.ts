@@ -65,6 +65,8 @@ export interface DockedShellTabSnapshot {
 export interface DockedShellStateSnapshot {
   activeTabId: string | null;
   canRestoreClosedTab: boolean;
+  currentPageCanFavorite: boolean;
+  currentPageIsFavorite: boolean;
   devtoolsVisible: boolean;
   dockPosition: "bottom" | "left" | "right";
   runtimeInfo: DockedShellRuntimeInfoSnapshot;
@@ -94,6 +96,8 @@ contextBridge.exposeInMainWorld("dockedShell", {
   restoreClosedTab: () => ipcRenderer.send("docked-shell:restore-closed-tab"),
   navigate: (url: string) => ipcRenderer.send("docked-shell:navigate", url),
   openHome: () => ipcRenderer.send("docked-shell:open-home"),
+  quickFavoriteCurrentPage: () =>
+    ipcRenderer.send("docked-shell:quick-favorite-current-page"),
   goBack: () => ipcRenderer.send("docked-shell:go-back"),
   goForward: () => ipcRenderer.send("docked-shell:go-forward"),
   reload: () => ipcRenderer.send("docked-shell:reload"),
@@ -127,6 +131,8 @@ contextBridge.exposeInMainWorld("downloadsPopup", {
     ipcRenderer.invoke(
       "downloads-popup:get-state",
     ) as Promise<DownloadsPopupStateSnapshot>,
+  setThemeSource: (themeSource: DockedShellThemeSource) =>
+    ipcRenderer.send("downloads-popup:set-theme-source", themeSource),
   openItem: (id: string) => ipcRenderer.invoke("downloads-popup:open-item", id),
   showItemInFolder: (id: string) =>
     ipcRenderer.invoke("downloads-popup:show-item-in-folder", id),

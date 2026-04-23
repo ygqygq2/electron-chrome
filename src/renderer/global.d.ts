@@ -16,6 +16,7 @@ declare global {
       restoreClosedTab: () => void;
       navigate: (url: string) => void;
       openHome: () => void;
+      quickFavoriteCurrentPage: () => void;
       goBack: () => void;
       goForward: () => void;
       reload: () => void;
@@ -38,6 +39,7 @@ declare global {
 
     downloadsPopup: {
       getState: () => Promise<DownloadsPopupStateSnapshot>;
+      setThemeSource: (themeSource: "system" | "light" | "dark") => void;
       openItem: (id: string) => Promise<boolean>;
       showItemInFolder: (id: string) => Promise<boolean>;
       retryDownload: (id: string) => Promise<boolean>;

@@ -5,6 +5,7 @@ export const SEARCH_ENGINE_URL = "https://www.baidu.com/s?wd=";
 export const DEFAULT_URL = INTERNAL_HOME_URL;
 export const INTERNAL_DOWNLOADS_URL = "chrome://downloads";
 export const INTERNAL_EXTENSIONS_URL = "chrome://extensions";
+export const INTERNAL_FAVORITES_URL = "chrome://favorites";
 export const INTERNAL_HISTORY_URL = "chrome://history";
 export const INTERNAL_SETTINGS_URL = "chrome://settings";
 export const CONTROLS_HEIGHT = 136;
@@ -142,6 +143,21 @@ export interface BrowserHistoryEntry {
   title: string;
   url: string;
   visitedAt: string;
+  closedAt?: string;
+}
+
+export interface FavoriteEntry {
+  id: string;
+  title: string;
+  url: string;
+  folder: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface FavoritesStateSnapshot {
+  folders: string[];
+  entries: FavoriteEntry[];
 }
 
 export interface BrowserTab extends TabSnapshot {
@@ -154,6 +170,8 @@ export interface BrowserShellState {
   devtoolsView: WebContentsView;
   devtoolsVisible: boolean;
   dockPosition: DockPosition;
+  currentPageCanFavorite: boolean;
+  currentPageIsFavorite: boolean;
   runtimeInfo: RuntimeInfoSnapshot;
   toolbarPreferences: ToolbarPreferences;
   theme: ThemeSnapshot;

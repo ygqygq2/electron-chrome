@@ -2,6 +2,7 @@ import {
   INTERNAL_HOME_URL,
   INTERNAL_DOWNLOADS_URL,
   INTERNAL_EXTENSIONS_URL,
+  INTERNAL_FAVORITES_URL,
   INTERNAL_HISTORY_URL,
   INTERNAL_SETTINGS_URL,
   SETTINGS_SECTIONS,
@@ -25,6 +26,93 @@ export function getHistoryActionFromUrl(url: string) {
     if (id) {
       return { type: "delete" as const, id };
     }
+  }
+
+  return null;
+}
+
+function splitUrlAndQuery(url: string) {
+  const trimmed = url.trim();
+  const [pathname = "", search = ""] = trimmed.split("?", 2);
+  return {
+    pathname: pathname.replace(/\/+$/, ""),
+    search,
+  };
+}
+
+function readFavoritesSearchParams(search: string) {
+  const params = new URLSearchParams(search);
+  return {
+    title: params.get("title") ?? "",
+    url: params.get("url") ?? "",
+    folder: params.get("folder") ?? "",
+    parent: params.get("parent") ?? "",
+    name: params.get("name") ?? "",
+  };
+}
+
+export function getFavoritesActionFromUrl(url: string) {
+  const { pathname, search } = splitUrlAndQuery(url);
+
+  if (pathname === INTERNAL_FAVORITES_URL) {
+    return null;
+  }
+
+  if (!pathname.startsWith(`${INTERNAL_FAVORITES_URL}/`)) {
+    return null;
+  }
+
+  const suffix = pathname.slice(`${INTERNAL_FAVORITES_URL}/`.length);
+  const params = readFavoritesSearchParams(search);
+
+  if (suffix === "add-current") {
+    return { type: "add-current" as const };
+  }
+
+  if (suffix === "create") {
+    return {
+      type: "create" as const,
+      title: params.title,
+      url: params.url,
+      folder: params.folder,
+    };
+  }
+
+  if (suffix === "folder/create") {
+    return {
+      type: "create-folder" as const,
+      parent: params.parent,
+      name: params.name,
+    };
+  }
+
+  if (suffix.startsWith("delete/")) {
+    const id = decodeURIComponent(suffix.slice("delete/".length));
+    return id ? { type: "delete" as const, id } : null;
+  }
+
+  if (suffix.startsWith("edit/")) {
+    const id = decodeURIComponent(suffix.slice("edit/".length));
+    return id
+      ? {
+          type: "edit" as const,
+          id,
+          title: params.title,
+          url: params.url,
+          folder: params.folder,
+        }
+      : null;
+  }
+
+  if (suffix.startsWith("move/")) {
+    const id = decodeURIComponent(suffix.slice("move/".length));
+    return id
+      ? {
+          type: "move" as const,
+          id,
+          folder: params.folder,
+        }
+      : null;
   }
 
   return null;
@@ -68,6 +156,14 @@ export function isExtensionsUrl(url: string) {
   return normalizeInternalUrl(url) === INTERNAL_EXTENSIONS_URL;
 }
 
+export function isFavoritesUrl(url: string) {
+  const { pathname } = splitUrlAndQuery(url);
+  return (
+    pathname === INTERNAL_FAVORITES_URL ||
+    pathname.startsWith(`${INTERNAL_FAVORITES_URL}/`)
+  );
+}
+
 export function isHomeUrl(url: string) {
   return normalizeInternalUrl(url) === INTERNAL_HOME_URL;
 }
@@ -87,6 +183,7 @@ export function isInternalPageUrl(url: string) {
     isSettingsUrl(url) ||
     isDownloadsUrl(url) ||
     isExtensionsUrl(url) ||
+    isFavoritesUrl(url) ||
     isHistoryUrl(url)
   );
 }
@@ -116,10 +213,13 @@ export function getInternalPageDisplayUrl(url: string) {
     return INTERNAL_EXTENSIONS_URL;
   }
 
+  if (isFavoritesUrl(url)) {
+    return INTERNAL_FAVORITES_URL;
+  }
+
   if (isHistoryUrl(url)) {
     return INTERNAL_HISTORY_URL;
   }
 
   return url;
 }
-

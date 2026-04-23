@@ -37,6 +37,7 @@
   --shell-toolbar-input-focus-bg: #fff;
   --shell-toolbar-input-focus-ring: #1a73e8;
   --shell-toolbar-lock: #16a34a;
+  --favorite-active: #f4b400;
   --shell-divider: #dbe1e8;
   --shell-divider-strong: #d5dae3;
   font-family: "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
@@ -78,6 +79,7 @@ html[data-theme="dark"] {
   --shell-toolbar-input-focus-bg: #20262d;
   --shell-toolbar-input-focus-ring: #8ab4f8;
   --shell-toolbar-lock: #7dd3a2;
+  --favorite-active: #ffd54f;
   --shell-divider: #2d343c;
   --shell-divider-strong: #333b44;
   color-scheme: dark;
@@ -551,6 +553,19 @@ html[data-theme="dark"] .address-icon::after {
 .toolbar-action-button,
 .app-menu-button {
   color: #6f7782;
+}
+
+.toolbar-action-button.is-favorite {
+  color: var(--favorite-active);
+}
+
+.toolbar-action-button.is-favorite:hover {
+  color: var(--favorite-active);
+}
+
+.toolbar-action-button:disabled {
+  cursor: default;
+  opacity: 0.52;
 }
 
 html[data-theme="dark"] .toolbar-action-button,

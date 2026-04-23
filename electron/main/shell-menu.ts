@@ -16,7 +16,7 @@ import {
   type ToolbarPreferences,
 } from "./model.js";
 import type { DownloadsController } from "./downloads-controller.js";
-import type { ShellController } from "./shell-core.js";
+import type { ShellController } from "./shell-controller-types.js";
 
 export interface ShellMenuControllerOptions {
   createWindow: () => BrowserWindow;

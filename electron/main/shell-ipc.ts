@@ -9,7 +9,7 @@ import {
 } from "./model.js";
 import type { DownloadsController } from "./downloads-controller.js";
 import type { ShellMenuController } from "./shell-menu.js";
-import type { ShellController } from "./shell-core.js";
+import type { ShellController } from "./shell-controller-types.js";
 
 export interface ShellIpcRegistrationOptions {
   downloads: Pick<

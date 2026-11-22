@@ -644,15 +644,24 @@ export function createShellController(
     return createTab(win, state, INTERNAL_HISTORY_URL, { activate: true });
   }
 
-  function restoreClosedTab(win: BrowserWindow, state: BrowserShellState) {
-    const lastClosedTab = state.closedTabHistory.pop();
+  function restoreClosedTabAt(
+    win: BrowserWindow,
+    state: BrowserShellState,
+    index: number,
+  ) {
+    const closedTab = state.closedTabHistory[index];
 
-    if (!lastClosedTab?.url) {
+    if (!closedTab?.url) {
       notifyStateChanged(win, state);
       return;
     }
 
-    createTab(win, state, lastClosedTab.url, { activate: true });
+    state.closedTabHistory.splice(index, 1);
+    createTab(win, state, closedTab.url, { activate: true });
+  }
+
+  function restoreClosedTab(win: BrowserWindow, state: BrowserShellState) {
+    restoreClosedTabAt(win, state, state.closedTabHistory.length - 1);
   }
 
   function attachTabKeyboardShortcuts(
@@ -1111,6 +1120,7 @@ export function createShellController(
     refreshAllWindowsState,
     registerWindow,
     restoreClosedTab,
+    restoreClosedTabAt,
     sendStateToShell,
     setDockPosition,
     setThemeSource,

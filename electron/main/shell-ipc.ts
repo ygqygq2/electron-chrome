@@ -24,7 +24,10 @@ export interface ShellIpcRegistrationOptions {
   >;
   menu: Pick<
     ShellMenuController,
-    "showMenuSection" | "showTabContextMenu" | "showToolbarButtonContextMenu"
+    | "showClosedTabsMenu"
+    | "showMenuSection"
+    | "showTabContextMenu"
+    | "showToolbarButtonContextMenu"
   >;
   shell: Pick<
     ShellController,
@@ -97,6 +100,15 @@ export function registerShellIpcHandlers(options: ShellIpcRegistrationOptions) {
       options.shell.restoreClosedTab(win, state);
     });
   });
+
+  ipcMain.handle(
+    "docked-shell:show-closed-tabs-menu",
+    (event, anchor: { x: number; y: number }) => {
+      withShellContext(event.sender, (win, state) => {
+        options.menu.showClosedTabsMenu(win, state, anchor);
+      });
+    },
+  );
 
   ipcMain.on("docked-shell:navigate", (event, url: string) => {
     withShellContext(event.sender, (_win, state) => {

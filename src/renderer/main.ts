@@ -25,6 +25,9 @@ const reloadButton = document.getElementById(
   "reloadButton",
 ) as HTMLButtonElement;
 const homeButton = document.getElementById("homeButton") as HTMLButtonElement;
+const restoreClosedTabButton = document.getElementById(
+  "restoreClosedTabButton",
+) as HTMLButtonElement;
 const leftToolbarActions = document.getElementById(
   "leftToolbarActions",
 ) as HTMLDivElement;
@@ -346,6 +349,10 @@ function updateNavigationButtons() {
   homeButton.disabled = !tab;
   reloadButton.disabled = !tab;
   restoreTabButton.disabled = !tab;
+  restoreClosedTabButton.disabled = !currentState.canRestoreClosedTab;
+  restoreClosedTabButton.title = currentState.canRestoreClosedTab
+    ? "单击恢复已关闭的标签页，长按或右键查看恢复列表"
+    : "没有可恢复的标签页";
 }
 
 function updateWindowControls() {
@@ -550,6 +557,53 @@ homeButton.addEventListener("click", () => {
   window.dockedShell.openHome();
 });
 
+let restoreLongPressTimer: number | null = null;
+let restoreLongPressTriggered = false;
+
+function clearRestoreLongPress() {
+  if (restoreLongPressTimer !== null) {
+    window.clearTimeout(restoreLongPressTimer);
+    restoreLongPressTimer = null;
+  }
+}
+
+function showRestoreListAt(x: number, y: number) {
+  void window.dockedShell.showClosedTabsMenu({ x, y });
+}
+
+restoreClosedTabButton.addEventListener("click", () => {
+  if (restoreLongPressTriggered) {
+    restoreLongPressTriggered = false;
+    return;
+  }
+
+  window.dockedShell.restoreClosedTab();
+});
+
+restoreClosedTabButton.addEventListener("contextmenu", (event) => {
+  event.preventDefault();
+  showRestoreListAt(event.clientX, event.clientY);
+});
+
+restoreClosedTabButton.addEventListener("pointerdown", (event) => {
+  if (event.button !== 0) {
+    return;
+  }
+
+  restoreLongPressTriggered = false;
+  clearRestoreLongPress();
+  restoreLongPressTimer = window.setTimeout(() => {
+    restoreLongPressTimer = null;
+    restoreLongPressTriggered = true;
+    const rect = restoreClosedTabButton.getBoundingClientRect();
+    showRestoreListAt(rect.left, rect.bottom + 6);
+  }, 500);
+});
+
+restoreClosedTabButton.addEventListener("pointerup", clearRestoreLongPress);
+restoreClosedTabButton.addEventListener("pointerleave", clearRestoreLongPress);
+restoreClosedTabButton.addEventListener("pointercancel", clearRestoreLongPress);
+
 urlInput.addEventListener("keydown", (event) => {
   if (event.key !== "Enter") {
     return;
@@ -655,6 +709,7 @@ ensureButtonIcon(backButton, "icon-back");
 ensureButtonIcon(forwardButton, "icon-forward");
 ensureButtonIcon(reloadButton, "icon-reload");
 ensureButtonIcon(homeButton, "icon-home");
+ensureButtonIcon(restoreClosedTabButton, "icon-restore-tab");
 ensureButtonIcon(restoreTabButton, "icon-history");
 ensureButtonIcon(favoritesButton, "icon-favorites");
 ensureButtonIcon(downloadsButton, "icon-downloads");

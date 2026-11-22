@@ -14,6 +14,7 @@ declare global {
       activateTab: (tabId: string) => void;
       closeTab: (tabId: string) => void;
       restoreClosedTab: () => void;
+      showClosedTabsMenu: (anchor: DockedShellMenuAnchor) => Promise<void>;
       navigate: (url: string) => void;
       openHome: () => void;
       quickFavoriteCurrentPage: () => void;

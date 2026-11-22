@@ -40,6 +40,7 @@ export interface ShellMenuControllerOptions {
     | "openHistoryTab"
     | "openSettingsTab"
     | "restoreClosedTab"
+    | "restoreClosedTabAt"
     | "setDockPosition"
     | "toggleDockedDevTools"
     | "updateToolbarPreferences"
@@ -48,6 +49,11 @@ export interface ShellMenuControllerOptions {
 
 export interface ShellMenuController {
   buildMenu: (win: BrowserWindow, state: BrowserShellState) => Menu;
+  showClosedTabsMenu: (
+    win: BrowserWindow,
+    state: BrowserShellState,
+    anchor: { x: number; y: number },
+  ) => void;
   showMenuSection: (
     win: BrowserWindow,
     state: BrowserShellState,
@@ -495,6 +501,44 @@ export function createShellMenuController(
     });
   }
 
+  function showClosedTabsMenu(
+    win: BrowserWindow,
+    state: BrowserShellState,
+    anchor: { x: number; y: number },
+  ) {
+    if (state.closedTabHistory.length === 0) {
+      return;
+    }
+
+    const template: MenuItemConstructorOptions[] = [
+      {
+        label: "最近关闭的标签页",
+        enabled: false,
+      },
+      {
+        type: "separator",
+      },
+      ...state.closedTabHistory
+        .map((tab, index) => ({
+          index,
+          title: (tab.title || tab.url).replace(/\s+/g, " ").trim(),
+        }))
+        .reverse()
+        .map(({ index, title }) => ({
+          label: title.length > 48 ? `${title.slice(0, 48)}…` : title,
+          click: () => {
+            shell.restoreClosedTabAt(win, state, index);
+          },
+        })),
+    ];
+
+    Menu.buildFromTemplate(template).popup({
+      window: win,
+      x: Math.round(anchor.x),
+      y: Math.round(anchor.y),
+    });
+  }
+
   function showTabContextMenu(
     win: BrowserWindow,
     state: BrowserShellState,
@@ -543,6 +587,7 @@ export function createShellMenuController(
 
   return {
     buildMenu,
+    showClosedTabsMenu,
     showMenuSection,
     showToolbarButtonContextMenu,
     showTabContextMenu,

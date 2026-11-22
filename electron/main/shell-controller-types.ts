@@ -107,6 +107,11 @@ export interface ShellController {
   refreshAllWindowsState: () => void;
   registerWindow: (win: BrowserWindow, state: BrowserShellState) => void;
   restoreClosedTab: (win: BrowserWindow, state: BrowserShellState) => void;
+  restoreClosedTabAt: (
+    win: BrowserWindow,
+    state: BrowserShellState,
+    index: number,
+  ) => void;
   sendStateToShell: (win: BrowserWindow, state: BrowserShellState) => void;
   setDockPosition: (
     win: BrowserWindow,

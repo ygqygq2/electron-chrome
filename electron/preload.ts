@@ -93,6 +93,8 @@ contextBridge.exposeInMainWorld("dockedShell", {
   closeTab: (tabId: string) =>
     ipcRenderer.send("docked-shell:close-tab", tabId),
   restoreClosedTab: () => ipcRenderer.send("docked-shell:restore-closed-tab"),
+  showClosedTabsMenu: (anchor: DockedShellMenuAnchor) =>
+    ipcRenderer.invoke("docked-shell:show-closed-tabs-menu", anchor),
   navigate: (url: string) => ipcRenderer.send("docked-shell:navigate", url),
   openHome: () => ipcRenderer.send("docked-shell:open-home"),
   quickFavoriteCurrentPage: () =>

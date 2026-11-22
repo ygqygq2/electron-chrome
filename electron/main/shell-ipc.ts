@@ -105,8 +105,9 @@ export function registerShellIpcHandlers(options: ShellIpcRegistrationOptions) {
   });
 
   ipcMain.on("docked-shell:open-home", (event) => {
-    withShellContext(event.sender, (_win, state) => {
-      options.shell.navigateActiveTab(state, DEFAULT_URL);
+    withShellContext(event.sender, (win, state) => {
+      // 首页在新标签页打开，不覆盖当前页面
+      options.shell.createTab(win, state, DEFAULT_URL, { activate: true });
     });
   });
 

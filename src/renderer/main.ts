@@ -86,7 +86,7 @@ const ICON_MARKUP: Record<string, string> = {
   "icon-home":
     '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/><path d="M9.5 21v-6h5v6"/></svg>',
   "icon-restore-tab":
-    '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 14-5-5 5-5"/><path d="M20 20a8 8 0 0 0-8-8H4"/></svg>',
+    '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 5.5 5.5 5.5 5.5 0 0 1-5.5 5.5H11"/></svg>',
   "icon-history":
     '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6v5h5"/><path d="M5.8 16.8A8 8 0 1 0 4 12"/><path d="M12 7.5v4.8l3 1.9"/></svg>',
   "icon-favorites":

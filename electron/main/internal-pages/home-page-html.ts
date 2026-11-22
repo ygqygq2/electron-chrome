@@ -1,11 +1,4 @@
-import {
-  INTERNAL_DOWNLOADS_URL,
-  INTERNAL_EXTENSIONS_URL,
-  INTERNAL_FAVORITES_URL,
-  INTERNAL_HISTORY_URL,
-  INTERNAL_SETTINGS_URL,
-  type ThemeSnapshot,
-} from "../model.js";
+import { type ThemeSnapshot } from "../model.js";
 
 export function createHomePageHtml(theme: ThemeSnapshot) {
   const isDark = theme.resolved === "dark";
@@ -18,16 +11,10 @@ export function createHomePageHtml(theme: ThemeSnapshot) {
     { label: "Gmail", icon: "邮", url: "https://mail.google.com/" },
     { label: "掘金", icon: "掘", url: "https://juejin.cn/" },
     { label: "少数派", icon: "少", url: "https://sspai.com/" },
-    { label: "设置", icon: "设", url: INTERNAL_SETTINGS_URL },
-    { label: "历史", icon: "史", url: INTERNAL_HISTORY_URL },
-    { label: "收藏", icon: "藏", url: INTERNAL_FAVORITES_URL },
-  ];
-  const chips = [
-    { label: "历史记录", url: INTERNAL_HISTORY_URL },
-    { label: "收藏夹", url: INTERNAL_FAVORITES_URL },
-    { label: "下载中心", url: INTERNAL_DOWNLOADS_URL },
-    { label: "设置", url: INTERNAL_SETTINGS_URL },
-    { label: "扩展", url: INTERNAL_EXTENSIONS_URL },
+    { label: "V2EX", icon: "V", url: "https://www.v2ex.com/" },
+    { label: "微博", icon: "微", url: "https://weibo.com/" },
+    { label: "淘宝", icon: "淘", url: "https://www.taobao.com/" },
+    { label: "豆瓣", icon: "豆", url: "https://www.douban.com/" },
   ];
 
   return `<!doctype html>
@@ -43,7 +30,6 @@ export function createHomePageHtml(theme: ThemeSnapshot) {
         --text: ${isDark ? "#eef5fd" : "#f7fbff"};
         --text-soft: ${isDark ? "rgba(238,245,253,0.76)" : "rgba(247,251,255,0.82)"};
         --glass: ${isDark ? "rgba(8, 24, 49, 0.34)" : "rgba(14, 60, 123, 0.26)"};
-        --glass-strong: ${isDark ? "rgba(10, 28, 54, 0.48)" : "rgba(10, 54, 112, 0.36)"};
         --card: ${isDark ? "rgba(255,255,255,0.08)" : "rgba(255,255,255,0.16)"};
         --card-hover: ${isDark ? "rgba(255,255,255,0.12)" : "rgba(255,255,255,0.22)"};
         --search-bg: ${isDark ? "rgba(255,255,255,0.94)" : "rgba(255,255,255,0.96)"};
@@ -100,10 +86,6 @@ export function createHomePageHtml(theme: ThemeSnapshot) {
         border-radius: 999px;
         backdrop-filter: blur(14px);
       }
-      .capsule a {
-        color: inherit;
-        text-decoration: none;
-      }
       .hero {
         display: flex;
         flex-direction: column;
@@ -154,32 +136,11 @@ export function createHomePageHtml(theme: ThemeSnapshot) {
       .search-form button:hover {
         background: rgba(41, 112, 206, 0.1);
       }
-      .chips {
-        display: flex;
-        gap: 10px;
-        flex-wrap: wrap;
-        justify-content: center;
-        margin: 20px 0 28px;
-      }
-      .chip {
-        display: inline-flex;
-        align-items: center;
-        height: 31px;
-        padding: 0 12px;
-        color: var(--text);
-        text-decoration: none;
-        background: var(--glass);
-        border: 1px solid rgba(255,255,255,0.1);
-        border-radius: 10px;
-        backdrop-filter: blur(10px);
-      }
-      .chip:hover {
-        background: var(--glass-strong);
-      }
       .sites {
         display: grid;
         grid-template-columns: repeat(6, minmax(0, 92px));
         gap: 18px 24px;
+        margin-top: 28px;
       }
       .site {
         display: flex;
@@ -245,7 +206,6 @@ export function createHomePageHtml(theme: ThemeSnapshot) {
       <div class="topbar">
         <div class="capsule">
           <span>🌓 当前主题：${theme.resolved}</span>
-          <a href="${INTERNAL_SETTINGS_URL}/uiStyle">调整外观</a>
         </div>
       </div>
       <section class="hero">
@@ -263,9 +223,6 @@ export function createHomePageHtml(theme: ThemeSnapshot) {
           <input name="wd" type="text" placeholder="搜索或输入网址" autocomplete="off" />
           <button type="submit" aria-label="搜索"><span class="search-action">↗</span></button>
         </form>
-        <div class="chips">
-          ${chips.map((chip) => `<a class="chip" href="${chip.url}">${chip.label}</a>`).join("")}
-        </div>
         <div class="sites">
           ${shortcuts
             .map(

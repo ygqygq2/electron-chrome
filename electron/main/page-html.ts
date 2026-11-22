@@ -1,3 +1,4 @@
+import type { ExtensionSnapshot } from "./extensions-controller.js";
 import { createFavoritesPageHtml } from "./favorites-page-html.js";
 import {
   createDownloadsPageHtml,
@@ -30,6 +31,7 @@ export function createInternalPageHtml(
   state: BrowserShellState,
   history: BrowserHistoryEntry[],
   favoritesState: FavoritesStateSnapshot,
+  extensions: ExtensionSnapshot[],
 ) {
   if (isHomeUrl(url)) {
     return createHomePageHtml(theme);
@@ -52,7 +54,7 @@ export function createInternalPageHtml(
   }
 
   if (isExtensionsUrl(url)) {
-    return createExtensionsPageHtml(theme);
+    return createExtensionsPageHtml(theme, extensions);
   }
 
   if (isFavoritesUrl(url)) {
@@ -72,6 +74,7 @@ export function createInternalPageDataUrl(
   state: BrowserShellState,
   history: BrowserHistoryEntry[],
   favoritesState: FavoritesStateSnapshot,
+  extensions: ExtensionSnapshot[],
 ) {
-  return `data:text/html;charset=UTF-8,${encodeURIComponent(createInternalPageHtml(url, theme, state, history, favoritesState))}`;
+  return `data:text/html;charset=UTF-8,${encodeURIComponent(createInternalPageHtml(url, theme, state, history, favoritesState, extensions))}`;
 }

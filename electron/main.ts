@@ -13,6 +13,7 @@ import {
 } from "electron";
 
 import { createDownloadsController } from "./main/downloads-controller.js";
+import { createExtensionsController } from "./main/extensions-controller.js";
 import { createFavoritesController } from "./main/favorites-controller.js";
 import {
   readFavoritesState,
@@ -125,7 +126,10 @@ function applyRuntimeStrategy() {
 
 applyRuntimeStrategy();
 
+const extensionsController = createExtensionsController();
+
 const shellController = createShellController({
+  extensionsController,
   favoritesController,
   onThemeChanged: () => {
     downloadsController?.notifyStateChanged();
@@ -307,6 +311,7 @@ function updateRuntimeInfoFromGpuStatus() {
 }
 
 app.whenReady().then(() => {
+  extensionsController.restorePersistedExtensions();
   downloadsController.registerSessionHandlers();
   registerGlobalShortcuts();
   updateRuntimeInfoFromGpuStatus();

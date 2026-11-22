@@ -50,7 +50,9 @@ import {
   getShellStateSnapshot,
   sendShellStateToWindow,
 } from "./shell-state-snapshot.js";
+import type { ExtensionsUrlAction } from "./url-utils.js";
 import {
+  getExtensionsActionFromUrl,
   getHistoryActionFromUrl,
   getInternalPageDisplayUrl,
   getSettingsSectionFromUrl,
@@ -69,7 +71,12 @@ const MAX_CLOSED_TAB_HISTORY = 12;
 export function createShellController(
   options: ShellControllerOptions,
 ): ShellController {
-  const { favoritesController, runtimeInfo, runtimePreferences } = options;
+  const {
+    extensionsController,
+    favoritesController,
+    runtimeInfo,
+    runtimePreferences,
+  } = options;
   const windowStates = new Map<number, BrowserShellState>();
   const browserHistoryStore = createBrowserHistoryStore();
   let lastFocusedShellWindowId: number | null = null;
@@ -153,6 +160,46 @@ export function createShellController(
     };
   }
 
+  function handleExtensionsUrlAction(
+    action: ExtensionsUrlAction,
+    tab: BrowserTab,
+    state: BrowserShellState,
+  ) {
+    const hostWindow = BrowserWindow.fromWebContents(tab.pageView.webContents);
+
+    if (action.type === "load") {
+      void extensionsController
+        .loadExtensionFromDialog(hostWindow)
+        .then((loaded) => {
+          if (loaded && hostWindow) {
+            openTabUrl(tab, INTERNAL_EXTENSIONS_URL, state);
+            notifyStateChanged(hostWindow, state);
+          }
+        });
+      return;
+    }
+
+    if (action.type === "remove") {
+      extensionsController.removeExtensionById(action.id);
+      return;
+    }
+
+    if (action.type === "toggle") {
+      const extensions = extensionsController.getExtensionSnapshots();
+      const target = extensions.find((item) => item.id === action.id);
+      if (target) {
+        void extensionsController
+          .setExtensionEnabled(action.id, !target.enabled)
+          .then((changed) => {
+            if (changed && hostWindow) {
+              openTabUrl(tab, INTERNAL_EXTENSIONS_URL, state);
+              notifyStateChanged(hostWindow, state);
+            }
+          });
+      }
+    }
+  }
+
   function openTabUrl(tab: BrowserTab, url: string, state: BrowserShellState) {
     const rawUrl = url || DEFAULT_URL;
     const historyAction = getHistoryActionFromUrl(rawUrl);
@@ -161,6 +208,7 @@ export function createShellController(
       state,
       getFavoritesShellDeps(),
     );
+    const extensionsAction = getExtensionsActionFromUrl(rawUrl);
 
     if (historyAction?.type === "clear") {
       browserHistoryStore.clear();
@@ -170,6 +218,10 @@ export function createShellController(
 
     if (favoritesChanged) {
       refreshFavoritesTabs(getFavoritesShellDeps());
+    }
+
+    if (extensionsAction) {
+      handleExtensionsUrlAction(extensionsAction, tab, state);
     }
 
     const nextUrl = getInternalPageDisplayUrl(rawUrl);
@@ -199,6 +251,7 @@ export function createShellController(
           state,
           browserHistoryStore.getEntries(),
           favoritesController.getState(),
+          extensionsController.getExtensionSnapshots(),
         ),
       );
       return;

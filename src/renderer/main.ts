@@ -339,7 +339,10 @@ function runFind(options: { forward?: boolean; findNext?: boolean } = {}) {
 function updateStatus() {
   // 加载状态改用刷新按钮的旋转动画表达，避免在工具栏里放置
   // 会挤压地址栏宽度的文字状态（地址栏宽度必须保持恒定）。
-  reloadButton.classList.toggle("is-loading", Boolean(getActiveTab()?.isLoading));
+  reloadButton.classList.toggle(
+    "is-loading",
+    Boolean(getActiveTab()?.isLoading),
+  );
 }
 
 function updateNavigationButtons() {

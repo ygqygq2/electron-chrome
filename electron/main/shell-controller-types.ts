@@ -1,5 +1,6 @@
 import type { BrowserWindow, WebContents, WebContentsView } from "electron";
 
+import type { ExtensionsController } from "./extensions-controller.js";
 import type { FavoritesController } from "./favorites-controller.js";
 import type {
   BrowserShellState,
@@ -26,6 +27,7 @@ export interface FavoritesShellDepsSnapshot {
 }
 
 export interface ShellControllerOptions {
+  extensionsController: ExtensionsController;
   favoritesController: FavoritesController;
   onThemeChanged: () => void;
   runtimeInfo: RuntimeInfoSnapshot;

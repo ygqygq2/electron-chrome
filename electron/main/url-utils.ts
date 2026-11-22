@@ -155,7 +155,38 @@ export function isDownloadsUrl(url: string) {
 }
 
 export function isExtensionsUrl(url: string) {
-  return normalizeInternalUrl(url) === INTERNAL_EXTENSIONS_URL;
+  const { pathname } = splitUrlAndQuery(url);
+  return (
+    pathname === INTERNAL_EXTENSIONS_URL ||
+    pathname.startsWith(`${INTERNAL_EXTENSIONS_URL}/`)
+  );
+}
+
+export type ExtensionsUrlAction =
+  | { type: "load" }
+  | { type: "remove"; id: string }
+  | { type: "toggle"; id: string };
+
+export function getExtensionsActionFromUrl(url: string) {
+  const { pathname } = splitUrlAndQuery(url);
+
+  if (pathname === `${INTERNAL_EXTENSIONS_URL}/load`) {
+    return { type: "load" as const };
+  }
+
+  const removePrefix = `${INTERNAL_EXTENSIONS_URL}/remove/`;
+  if (pathname.startsWith(removePrefix)) {
+    const id = pathname.slice(removePrefix.length).trim();
+    return id ? { type: "remove" as const, id } : null;
+  }
+
+  const togglePrefix = `${INTERNAL_EXTENSIONS_URL}/toggle/`;
+  if (pathname.startsWith(togglePrefix)) {
+    const id = decodeURIComponent(pathname.slice(togglePrefix.length).trim());
+    return id ? { type: "toggle" as const, id } : null;
+  }
+
+  return null;
 }
 
 export function isFavoritesUrl(url: string) {

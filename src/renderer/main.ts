@@ -29,8 +29,6 @@ const leftToolbarActions = document.getElementById(
   "leftToolbarActions",
 ) as HTMLDivElement;
 const urlInput = document.getElementById("urlInput") as HTMLInputElement;
-const statusStack = document.querySelector(".status-stack") as HTMLDivElement;
-const statusText = document.getElementById("statusText") as HTMLDivElement;
 const rightToolbarActions = document.getElementById(
   "rightToolbarActions",
 ) as HTMLDivElement;
@@ -336,30 +334,9 @@ function runFind(options: { forward?: boolean; findNext?: boolean } = {}) {
 }
 
 function updateStatus() {
-  const tab = getActiveTab();
-  if (!tab) {
-    statusText.textContent = "";
-    statusStack.classList.add("hidden");
-    statusText.classList.remove("loading");
-    return;
-  }
-
-  if (tab.isLoading) {
-    statusText.textContent = "加载中…";
-    statusStack.classList.remove("hidden");
-    statusText.classList.add("loading");
-    return;
-  }
-
-  if (currentState.devtoolsVisible) {
-    statusText.textContent = `开发者工具 · ${currentState.dockPosition}`;
-    statusStack.classList.remove("hidden");
-  } else {
-    statusText.textContent = "";
-    statusStack.classList.add("hidden");
-  }
-
-  statusText.classList.remove("loading");
+  // 加载状态改用刷新按钮的旋转动画表达，避免在工具栏里放置
+  // 会挤压地址栏宽度的文字状态（地址栏宽度必须保持恒定）。
+  reloadButton.classList.toggle("is-loading", Boolean(getActiveTab()?.isLoading));
 }
 
 function updateNavigationButtons() {

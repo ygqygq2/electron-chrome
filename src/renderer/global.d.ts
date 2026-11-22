@@ -1,9 +1,9 @@
 import type {
-  DownloadsPopupStateSnapshot,
   DockedShellMenuAnchor,
   DockedShellMenuSection,
   DockedShellStateSnapshot,
   DockedShellToolbarContextButtonId,
+  DownloadsPopupStateSnapshot,
 } from "../../electron/preload";
 
 declare global {
@@ -20,6 +20,16 @@ declare global {
       goBack: () => void;
       goForward: () => void;
       reload: () => void;
+      findInPage: (
+        query: string,
+        options?: { forward?: boolean; findNext?: boolean },
+      ) => Promise<void>;
+      hideFindBar: () => void;
+      showTabContextMenu: (
+        tabId: string,
+        anchor: DockedShellMenuAnchor,
+      ) => Promise<void>;
+      closeOtherTabs: (tabId: string) => void;
       openDownloadsPopup: () => void;
       minimizeWindow: () => void;
       toggleMaximizeWindow: () => void;
@@ -34,6 +44,14 @@ declare global {
       ) => Promise<void>;
       onStateChanged: (
         callback: (state: DockedShellStateSnapshot) => void,
+      ) => () => void;
+      onFocusUrlInput: (callback: () => void) => () => void;
+      onFindBarShown: (callback: () => void) => () => void;
+      onFindBarResult: (
+        callback: (result: {
+          activeMatchOrdinal: number;
+          matches: number;
+        }) => void,
       ) => () => void;
     };
 

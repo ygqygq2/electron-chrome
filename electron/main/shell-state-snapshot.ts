@@ -4,10 +4,10 @@ import type { FavoritesController } from "./favorites-controller.js";
 import { cloneToolbarPreferences } from "./local-persistence.js";
 import {
   type BrowserShellState,
+  type DockPosition,
+  type RuntimeInfoSnapshot,
   type ThemeSnapshot,
   type ToolbarPreferences,
-  type RuntimeInfoSnapshot,
-  type DockPosition,
 } from "./model.js";
 import { isInternalPageUrl } from "./url-utils.js";
 
@@ -16,6 +16,7 @@ export interface ShellStateSnapshot {
   canRestoreClosedTab: boolean;
   currentPageCanFavorite: boolean;
   currentPageIsFavorite: boolean;
+  findBarVisible: boolean;
   devtoolsVisible: boolean;
   dockPosition: DockPosition;
   runtimeInfo: RuntimeInfoSnapshot;
@@ -39,14 +40,15 @@ export function getShellStateSnapshot(
   state: BrowserShellState,
   favoritesController: FavoritesController,
 ): ShellStateSnapshot {
-  const activeTab = state.tabs.find((tab) => tab.id === state.activeTabId) ?? null;
+  const activeTab =
+    state.tabs.find((tab) => tab.id === state.activeTabId) ?? null;
   const currentPageCanFavorite = Boolean(
     activeTab?.url && !isInternalPageUrl(activeTab.url),
   );
   const currentPageIsFavorite = Boolean(
     currentPageCanFavorite &&
-      activeTab?.url &&
-      favoritesController.hasUrl(activeTab.url),
+    activeTab?.url &&
+    favoritesController.hasUrl(activeTab.url),
   );
 
   return {
@@ -54,6 +56,7 @@ export function getShellStateSnapshot(
     canRestoreClosedTab: state.closedTabHistory.length > 0,
     currentPageCanFavorite,
     currentPageIsFavorite,
+    findBarVisible: state.findBarVisible,
     devtoolsVisible: state.devtoolsVisible,
     dockPosition: state.dockPosition,
     runtimeInfo: state.runtimeInfo,

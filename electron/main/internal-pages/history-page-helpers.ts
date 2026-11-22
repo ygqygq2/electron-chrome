@@ -63,7 +63,11 @@ function formatHistoryDayShortLabel(visitedAt: string) {
   const date = new Date(visitedAt);
   const today = new Date();
   const dayDiff = Math.round(
-    (new Date(today.getFullYear(), today.getMonth(), today.getDate()).getTime() -
+    (new Date(
+      today.getFullYear(),
+      today.getMonth(),
+      today.getDate(),
+    ).getTime() -
       new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime()) /
       86400000,
   );
@@ -96,7 +100,9 @@ function formatHistoryClock(visitedAt: string) {
   });
 }
 
-export function groupHistoryByDay(entries: BrowserHistoryEntry[]): HistoryDayGroup[] {
+export function groupHistoryByDay(
+  entries: BrowserHistoryEntry[],
+): HistoryDayGroup[] {
   const groups = new Map<string, HistoryDayGroup>();
 
   entries.forEach((entry) => {
@@ -117,11 +123,15 @@ export function groupHistoryByDay(entries: BrowserHistoryEntry[]): HistoryDayGro
   return Array.from(groups.values());
 }
 
-export function buildHistoryMonthGroups(dayGroups: HistoryDayGroup[]): HistoryMonthGroup[] {
+export function buildHistoryMonthGroups(
+  dayGroups: HistoryDayGroup[],
+): HistoryMonthGroup[] {
   const groups = new Map<string, HistoryMonthGroup>();
 
   dayGroups.forEach((dayGroup) => {
-    const monthKey = getHistoryMonthKey(dayGroup.items[0]?.visitedAt ?? new Date().toISOString());
+    const monthKey = getHistoryMonthKey(
+      dayGroup.items[0]?.visitedAt ?? new Date().toISOString(),
+    );
 
     if (!groups.has(monthKey)) {
       groups.set(monthKey, {
@@ -186,7 +196,11 @@ export function renderHistoryTimeGroupsMarkup(groups: HistoryDayGroup[]) {
 
 export function getDefaultHistorySelectedDayKey(groups: HistoryDayGroup[]) {
   if (groups.length === 0) return null;
-  return groups.find((group) => group.shortLabel === "今天")?.key ?? groups[0]?.key ?? null;
+  return (
+    groups.find((group) => group.shortLabel === "今天")?.key ??
+    groups[0]?.key ??
+    null
+  );
 }
 
 export function renderHistorySidebarMarkup(

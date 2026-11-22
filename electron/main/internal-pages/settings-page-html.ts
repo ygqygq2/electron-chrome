@@ -1,11 +1,11 @@
 import {
+  type BrowserHistoryEntry,
   DEFAULT_URL,
   INTERNAL_DOWNLOADS_URL,
   INTERNAL_HISTORY_URL,
   INTERNAL_SETTINGS_URL,
-  SETTINGS_SECTIONS,
-  type BrowserHistoryEntry,
   type RuntimeInfoSnapshot,
+  SETTINGS_SECTIONS,
   type SettingsSection,
   type ThemeSnapshot,
   type ToolbarPreferences,

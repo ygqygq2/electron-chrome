@@ -2,10 +2,7 @@ import {
   createFavoriteEntryId,
   writeFavoritesState,
 } from "./local-persistence.js";
-import type {
-  FavoriteEntry,
-  FavoritesStateSnapshot,
-} from "./model.js";
+import type { FavoriteEntry, FavoritesStateSnapshot } from "./model.js";
 
 function normalizeFavoriteUrl(url: string) {
   const normalized = url.trim();
@@ -44,7 +41,12 @@ export interface FavoritesController {
   getState: () => FavoritesStateSnapshot;
   addEntry: (title: string, url: string, folder?: string) => string | null;
   removeEntry: (id: string) => boolean;
-  editEntry: (id: string, title: string, url: string, folder: string) => boolean;
+  editEntry: (
+    id: string,
+    title: string,
+    url: string,
+    folder: string,
+  ) => boolean;
   moveEntry: (id: string, folder: string) => boolean;
   createFolder: (parentFolder: string | null, name: string) => string | null;
   hasUrl: (url: string) => boolean;
@@ -85,7 +87,9 @@ export function createFavoritesController(
 
       const nextFolder = ensureFolderExists(folder);
       const safeTitle = title.trim() || normalizedUrl;
-      const existingEntry = state.entries.find((entry) => entry.url === normalizedUrl);
+      const existingEntry = state.entries.find(
+        (entry) => entry.url === normalizedUrl,
+      );
 
       if (existingEntry) {
         state = {
@@ -206,7 +210,10 @@ export function createFavoritesController(
     },
     hasUrl(url: string) {
       const normalizedUrl = normalizeFavoriteUrl(url);
-      return Boolean(normalizedUrl) && state.entries.some((entry) => entry.url === normalizedUrl);
+      return (
+        Boolean(normalizedUrl) &&
+        state.entries.some((entry) => entry.url === normalizedUrl)
+      );
     },
   };
 }

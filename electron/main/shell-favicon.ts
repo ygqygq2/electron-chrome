@@ -3,9 +3,9 @@ import { Buffer } from "node:buffer";
 import { BrowserWindow } from "electron";
 
 import {
-  buildDesktopChromeUserAgent,
   type BrowserShellState,
   type BrowserTab,
+  buildDesktopChromeUserAgent,
 } from "./model.js";
 
 const DESKTOP_CHROME_USER_AGENT = buildDesktopChromeUserAgent();

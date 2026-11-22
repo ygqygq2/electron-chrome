@@ -80,6 +80,20 @@
           </button>
         </div>
       </div>
+
+      <div id="findBar" class="find-bar hidden">
+        <input id="findInput" class="find-input" type="text" placeholder="在页面中查找" />
+        <span id="findResultText" class="find-result">0/0</span>
+        <button id="findPrevButton" class="find-button" type="button" title="上一个" aria-label="上一个">
+          <span class="toolbar-icon icon-back" aria-hidden="true"></span>
+        </button>
+        <button id="findNextButton" class="find-button" type="button" title="下一个" aria-label="下一个">
+          <span class="toolbar-icon icon-forward" aria-hidden="true"></span>
+        </button>
+        <button id="findCloseButton" class="find-button" type="button" title="关闭查找" aria-label="关闭查找">
+          <span class="toolbar-icon icon-close-small" aria-hidden="true"></span>
+        </button>
+      </div>
     </div>
     <script type="module" src="./main.ts"></script>
   </body>

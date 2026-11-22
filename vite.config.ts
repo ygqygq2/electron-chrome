@@ -48,6 +48,11 @@ export default defineConfig(({ command }) => {
 
   return {
     root: path.join(__dirname, "src/renderer"),
+    server: {
+      port: 5173,
+      // 固定 5173：被占用时直接报错退出，而不是悄悄换端口
+      strictPort: true,
+    },
     build: {
       outDir: path.join(__dirname, "dist"),
       emptyOutDir: true,

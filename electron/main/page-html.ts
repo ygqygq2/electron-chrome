@@ -1,3 +1,12 @@
+import { createFavoritesPageHtml } from "./favorites-page-html.js";
+import {
+  createDownloadsPageHtml,
+  createDownloadsPopupDataUrl,
+} from "./internal-pages/downloads-page-html.js";
+import { createExtensionsPageHtml } from "./internal-pages/extensions-page-html.js";
+import { createHistoryPageHtml } from "./internal-pages/history-page-html.js";
+import { createHomePageHtml } from "./internal-pages/home-page-html.js";
+import { createSettingsPageHtml } from "./internal-pages/settings-page-html.js";
 import type {
   BrowserHistoryEntry,
   BrowserShellState,
@@ -9,18 +18,9 @@ import {
   isDownloadsUrl,
   isExtensionsUrl,
   isFavoritesUrl,
-  isHomeUrl,
   isHistoryUrl,
+  isHomeUrl,
 } from "./url-utils.js";
-import { createFavoritesPageHtml } from "./favorites-page-html.js";
-import {
-  createDownloadsPageHtml,
-  createDownloadsPopupDataUrl,
-} from "./internal-pages/downloads-page-html.js";
-import { createExtensionsPageHtml } from "./internal-pages/extensions-page-html.js";
-import { createHistoryPageHtml } from "./internal-pages/history-page-html.js";
-import { createHomePageHtml } from "./internal-pages/home-page-html.js";
-import { createSettingsPageHtml } from "./internal-pages/settings-page-html.js";
 
 export { createDownloadsPopupDataUrl };
 
@@ -63,7 +63,7 @@ export function createInternalPageHtml(
     return createHistoryPageHtml(theme, history);
   }
 
-  return "<!doctype html><html><head><meta charset=\"UTF-8\" /><title>内部页面</title></head><body></body></html>";
+  return '<!doctype html><html><head><meta charset="UTF-8" /><title>内部页面</title></head><body></body></html>';
 }
 
 export function createInternalPageDataUrl(

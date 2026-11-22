@@ -1,8 +1,4 @@
-import type {
-  BrowserWindow,
-  WebContentsView,
-  WebContents,
-} from "electron";
+import type { BrowserWindow, WebContents, WebContentsView } from "electron";
 
 import type { FavoritesController } from "./favorites-controller.js";
 import type {
@@ -38,13 +34,26 @@ export interface ShellControllerOptions {
 }
 
 export interface ShellController {
-  activateTab: (win: BrowserWindow, state: BrowserShellState, tabId: string) => void;
-  attachDevToolsToggleShortcut: (
+  activateTab: (
+    win: BrowserWindow,
+    state: BrowserShellState,
+    tabId: string,
+  ) => void;
+  attachTabKeyboardShortcuts: (
     contents: WebContents,
     win: BrowserWindow,
     state: BrowserShellState,
   ) => void;
-  closeTab: (win: BrowserWindow, state: BrowserShellState, tabId: string) => void;
+  closeOtherTabs: (
+    win: BrowserWindow,
+    state: BrowserShellState,
+    tabId: string,
+  ) => void;
+  closeTab: (
+    win: BrowserWindow,
+    state: BrowserShellState,
+    tabId: string,
+  ) => void;
   createTab: (
     win: BrowserWindow,
     state: BrowserShellState,
@@ -68,13 +77,33 @@ export interface ShellController {
   markWindowFocused: (windowId: number) => void;
   navigateActiveTab: (state: BrowserShellState, url: string) => void;
   notifyStateChanged: (win: BrowserWindow, state: BrowserShellState) => void;
-  openDownloadsTab: (win: BrowserWindow, state: BrowserShellState) => BrowserTab;
-  openExtensionsTab: (win: BrowserWindow, state: BrowserShellState) => BrowserTab;
-  openFavoritesTab: (win: BrowserWindow, state: BrowserShellState) => BrowserTab;
+  hideFindBar: (win: BrowserWindow, state: BrowserShellState) => void;
+  performFindInPage: (
+    win: BrowserWindow,
+    state: BrowserShellState,
+    query: string,
+    options?: { forward?: boolean; findNext?: boolean },
+  ) => void;
+  startFindInPage: (win: BrowserWindow, state: BrowserShellState) => void;
+  openDownloadsTab: (
+    win: BrowserWindow,
+    state: BrowserShellState,
+  ) => BrowserTab;
+  openExtensionsTab: (
+    win: BrowserWindow,
+    state: BrowserShellState,
+  ) => BrowserTab;
+  openFavoritesTab: (
+    win: BrowserWindow,
+    state: BrowserShellState,
+  ) => BrowserTab;
   openHistoryTab: (win: BrowserWindow, state: BrowserShellState) => BrowserTab;
   openSettingsTab: (win: BrowserWindow, state: BrowserShellState) => BrowserTab;
   openTabUrl: (tab: BrowserTab, url: string, state: BrowserShellState) => void;
-  quickFavoriteActiveTab: (win: BrowserWindow, state: BrowserShellState) => boolean;
+  quickFavoriteActiveTab: (
+    win: BrowserWindow,
+    state: BrowserShellState,
+  ) => boolean;
   refreshAllWindowsState: () => void;
   registerWindow: (win: BrowserWindow, state: BrowserShellState) => void;
   restoreClosedTab: (win: BrowserWindow, state: BrowserShellState) => void;

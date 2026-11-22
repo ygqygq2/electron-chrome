@@ -1,22 +1,20 @@
-import {
-  BrowserWindow,
-  type MenuItemConstructorOptions,
-} from "electron";
+import { BrowserWindow, type MenuItemConstructorOptions } from "electron";
 
-import {
-  INTERNAL_FAVORITES_URL,
-  type BrowserShellState,
-  type BrowserTab,
-} from "./model.js";
 import type { FavoritesController } from "./favorites-controller.js";
 import {
-  getFavoritesActionFromUrl,
-  isFavoritesUrl,
-} from "./url-utils.js";
+  type BrowserShellState,
+  type BrowserTab,
+  INTERNAL_FAVORITES_URL,
+} from "./model.js";
+import { getFavoritesActionFromUrl, isFavoritesUrl } from "./url-utils.js";
 
 interface FavoritesShellDeps {
   controller: FavoritesController;
-  activateTab: (win: BrowserWindow, state: BrowserShellState, tabId: string) => void;
+  activateTab: (
+    win: BrowserWindow,
+    state: BrowserShellState,
+    tabId: string,
+  ) => void;
   createTab: (
     win: BrowserWindow,
     state: BrowserShellState,
@@ -74,8 +72,12 @@ export function buildFavoritesMenuTemplate(
   const activeTab = deps.getActiveTab(state);
   const favoritesState = deps.controller.getState();
   const topEntries = favoritesState.entries.slice(0, 8);
-  const canAddCurrent = Boolean(activeTab?.url && !deps.isInternalPageUrl(activeTab.url));
-  const alreadyFavorite = Boolean(activeTab?.url && deps.controller.hasUrl(activeTab.url));
+  const canAddCurrent = Boolean(
+    activeTab?.url && !deps.isInternalPageUrl(activeTab.url),
+  );
+  const alreadyFavorite = Boolean(
+    activeTab?.url && deps.controller.hasUrl(activeTab.url),
+  );
 
   return [
     {
@@ -125,7 +127,9 @@ export function handleFavoritesUrlAction(
     const activeTab = deps.getActiveTab(state);
 
     if (activeTab?.url && !deps.isInternalPageUrl(activeTab.url)) {
-      return Boolean(deps.controller.addEntry(activeTab.title, activeTab.url, "收藏栏"));
+      return Boolean(
+        deps.controller.addEntry(activeTab.title, activeTab.url, "收藏栏"),
+      );
     }
 
     return false;
@@ -143,7 +147,10 @@ export function handleFavoritesUrlAction(
 
   if (favoritesAction.type === "create-folder") {
     return Boolean(
-      deps.controller.createFolder(favoritesAction.parent || null, favoritesAction.name),
+      deps.controller.createFolder(
+        favoritesAction.parent || null,
+        favoritesAction.name,
+      ),
     );
   }
 

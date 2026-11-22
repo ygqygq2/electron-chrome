@@ -3,16 +3,17 @@ import path from "node:path";
 
 import {
   BrowserWindow,
+  type DownloadItem,
+  Notification,
   session,
   shell,
-  type DownloadItem,
   type WebContents,
 } from "electron";
 
 import {
-  getWindowBackgroundColor,
   type DownloadRecordSnapshot,
   type DownloadsStateSnapshot,
+  getWindowBackgroundColor,
   type ThemeSnapshot,
 } from "./model.js";
 import { createDownloadsPopupDataUrl } from "./page-html.js";
@@ -22,6 +23,7 @@ const MAX_DOWNLOAD_RECORDS = 120;
 export interface DownloadsControllerOptions {
   getActiveDownloadTargetWebContents: () => WebContents | null;
   getLastFocusedShellWindow: () => BrowserWindow | null;
+  getPersistenceFilePath: () => string;
   getPreloadPath: () => string;
   getThemeSnapshot: () => ThemeSnapshot;
 }
@@ -31,7 +33,9 @@ export interface DownloadsController {
   getDownloadsStateSnapshot: () => DownloadsStateSnapshot;
   notifyStateChanged: () => void;
   openDownloadItemById: (id: string) => Promise<boolean>;
-  openDownloadsPopup: (parentWindow?: BrowserWindow | null) => Promise<BrowserWindow>;
+  openDownloadsPopup: (
+    parentWindow?: BrowserWindow | null,
+  ) => Promise<BrowserWindow>;
   registerSessionHandlers: () => void;
   removeDownloadRecord: (id: string) => void;
   retryDownloadItemById: (id: string) => boolean;
@@ -44,17 +48,80 @@ export function createDownloadsController(
   let downloadsPopupWindow: BrowserWindow | null = null;
   let downloadRecords: DownloadRecordSnapshot[] = [];
 
+  function loadPersistedDownloadRecords() {
+    try {
+      const filePath = options.getPersistenceFilePath();
+      if (!fs.existsSync(filePath)) {
+        return;
+      }
+
+      const raw = JSON.parse(fs.readFileSync(filePath, "utf-8"));
+      if (!Array.isArray(raw)) {
+        return;
+      }
+
+      downloadRecords = raw
+        .filter(
+          (record): record is DownloadRecordSnapshot =>
+            Boolean(record) &&
+            typeof record.id === "string" &&
+            record.state !== "progressing" &&
+            record.state !== "paused",
+        )
+        .slice(0, MAX_DOWNLOAD_RECORDS);
+    } catch (error) {
+      console.warn("[electron-chrome] failed to load download records", error);
+    }
+  }
+
+  function persistDownloadRecords() {
+    try {
+      const filePath = options.getPersistenceFilePath();
+      fs.mkdirSync(path.dirname(filePath), { recursive: true });
+      fs.writeFileSync(filePath, JSON.stringify(downloadRecords), "utf-8");
+    } catch (error) {
+      console.warn(
+        "[electron-chrome] failed to persist download records",
+        error,
+      );
+    }
+  }
+
+  function showDownloadCompletionNotification(record: DownloadRecordSnapshot) {
+    try {
+      if (!Notification.isSupported() || record.state !== "completed") {
+        return;
+      }
+
+      new Notification({
+        title: "下载完成",
+        body: record.fileName,
+      }).show();
+    } catch (error) {
+      console.warn(
+        "[electron-chrome] failed to show download notification",
+        error,
+      );
+    }
+  }
+
+  loadPersistedDownloadRecords();
+
   function createDownloadId() {
     return `download-${Date.now()}-${Math.random().toString(16).slice(2, 8)}`;
   }
 
-  function getDownloadState(item: DownloadItem): DownloadRecordSnapshot["state"] {
+  function getDownloadState(
+    item: DownloadItem,
+  ): DownloadRecordSnapshot["state"] {
     if (item.isPaused()) {
       return "paused";
     }
 
     const state = item.getState();
-    return state === "completed" || state === "cancelled" || state === "interrupted"
+    return state === "completed" ||
+      state === "cancelled" ||
+      state === "interrupted"
       ? state
       : "progressing";
   }
@@ -99,16 +166,22 @@ export function createDownloadsController(
   }
 
   function upsertDownloadRecord(record: DownloadRecordSnapshot) {
-    const targetIndex = downloadRecords.findIndex((item) => item.id === record.id);
+    const targetIndex = downloadRecords.findIndex(
+      (item) => item.id === record.id,
+    );
 
     if (targetIndex >= 0) {
       downloadRecords.splice(targetIndex, 1, record);
-      return;
+    } else {
+      downloadRecords.unshift(record);
+      if (downloadRecords.length > MAX_DOWNLOAD_RECORDS) {
+        downloadRecords.length = MAX_DOWNLOAD_RECORDS;
+      }
     }
 
-    downloadRecords.unshift(record);
-    if (downloadRecords.length > MAX_DOWNLOAD_RECORDS) {
-      downloadRecords.length = MAX_DOWNLOAD_RECORDS;
+    // 进行中的记录高频更新，只在状态落定时写盘，避免频繁 IO
+    if (record.state !== "progressing") {
+      persistDownloadRecords();
     }
   }
 
@@ -162,7 +235,9 @@ export function createDownloadsController(
       title: "下载",
       autoHideMenuBar: true,
       show: false,
-      backgroundColor: getWindowBackgroundColor(options.getThemeSnapshot().resolved),
+      backgroundColor: getWindowBackgroundColor(
+        options.getThemeSnapshot().resolved,
+      ),
       webPreferences: {
         preload: options.getPreloadPath(),
         contextIsolation: true,
@@ -232,18 +307,26 @@ export function createDownloadsController(
   }
 
   function clearCompletedDownloadRecords() {
-    downloadRecords = downloadRecords.filter((record) => record.state !== "completed");
+    downloadRecords = downloadRecords.filter(
+      (record) => record.state !== "completed",
+    );
+    persistDownloadRecords();
     notifyStateChanged();
   }
 
   function removeDownloadRecord(id: string) {
     const target = downloadRecords.find((record) => record.id === id);
 
-    if (!target || target.state === "progressing" || target.state === "paused") {
+    if (
+      !target ||
+      target.state === "progressing" ||
+      target.state === "paused"
+    ) {
       return;
     }
 
     downloadRecords = downloadRecords.filter((record) => record.id !== id);
+    persistDownloadRecords();
     notifyStateChanged();
   }
 
@@ -270,6 +353,13 @@ export function createDownloadsController(
             : undefined;
         syncDownloadRecord(downloadId, item, sourcePageUrl, finalState);
         notifyStateChanged();
+
+        const finishedRecord = downloadRecords.find(
+          (record) => record.id === downloadId,
+        );
+        if (finishedRecord) {
+          showDownloadCompletionNotification(finishedRecord);
+        }
       });
     });
   }

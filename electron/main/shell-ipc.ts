@@ -1,5 +1,6 @@
 import { ipcMain } from "electron";
 
+import type { DownloadsController } from "./downloads-controller.js";
 import {
   DEFAULT_URL,
   INTERNAL_SETTINGS_URL,
@@ -7,9 +8,8 @@ import {
   type ThemeSource,
   type ToolbarContextButtonId,
 } from "./model.js";
-import type { DownloadsController } from "./downloads-controller.js";
-import type { ShellMenuController } from "./shell-menu.js";
 import type { ShellController } from "./shell-controller-types.js";
+import type { ShellMenuController } from "./shell-menu.js";
 
 export interface ShellIpcRegistrationOptions {
   downloads: Pick<
@@ -24,11 +24,12 @@ export interface ShellIpcRegistrationOptions {
   >;
   menu: Pick<
     ShellMenuController,
-    "showMenuSection" | "showToolbarButtonContextMenu"
+    "showMenuSection" | "showTabContextMenu" | "showToolbarButtonContextMenu"
   >;
   shell: Pick<
     ShellController,
     | "activateTab"
+    | "closeOtherTabs"
     | "closeTab"
     | "createTab"
     | "getActivePageView"
@@ -36,20 +37,20 @@ export interface ShellIpcRegistrationOptions {
     | "getStateSnapshot"
     | "getWindowContextFromWebContents"
     | "getWindowState"
+    | "hideFindBar"
     | "navigateActiveTab"
     | "notifyStateChanged"
     | "openDownloadsTab"
     | "openSettingsTab"
     | "openTabUrl"
+    | "performFindInPage"
     | "quickFavoriteActiveTab"
     | "restoreClosedTab"
     | "setThemeSource"
   >;
 }
 
-export function registerShellIpcHandlers(
-  options: ShellIpcRegistrationOptions,
-) {
+export function registerShellIpcHandlers(options: ShellIpcRegistrationOptions) {
   function withShellContext<T>(
     sender: Electron.WebContents,
     callback: (
@@ -73,7 +74,9 @@ export function registerShellIpcHandlers(
 
   ipcMain.on("docked-shell:new-tab", (event, url?: string) => {
     withShellContext(event.sender, (win, state) => {
-      options.shell.createTab(win, state, url || DEFAULT_URL, { activate: true });
+      options.shell.createTab(win, state, url || DEFAULT_URL, {
+        activate: true,
+      });
     });
   });
 
@@ -115,19 +118,68 @@ export function registerShellIpcHandlers(
 
   ipcMain.on("docked-shell:go-back", (event) => {
     withShellContext(event.sender, (_win, state) => {
-      options.shell.getActivePageView(state)?.webContents.navigationHistory.goBack();
+      options.shell
+        .getActivePageView(state)
+        ?.webContents.navigationHistory.goBack();
     });
   });
 
   ipcMain.on("docked-shell:go-forward", (event) => {
     withShellContext(event.sender, (_win, state) => {
-      options.shell.getActivePageView(state)?.webContents.navigationHistory.goForward();
+      options.shell
+        .getActivePageView(state)
+        ?.webContents.navigationHistory.goForward();
     });
   });
 
   ipcMain.on("docked-shell:reload", (event) => {
     withShellContext(event.sender, (_win, state) => {
       options.shell.getActivePageView(state)?.webContents.reload();
+    });
+  });
+
+  ipcMain.handle(
+    "docked-shell:find-in-page",
+    (
+      event,
+      payload: {
+        query: string;
+        forward?: boolean;
+        findNext?: boolean;
+      },
+    ) => {
+      withShellContext(event.sender, (win, state) => {
+        options.shell.performFindInPage(win, state, payload.query ?? "", {
+          forward: payload.forward,
+          findNext: payload.findNext,
+        });
+      });
+    },
+  );
+
+  ipcMain.on("docked-shell:find-bar-hide", (event) => {
+    withShellContext(event.sender, (win, state) => {
+      options.shell.hideFindBar(win, state);
+    });
+  });
+
+  ipcMain.handle(
+    "docked-shell:show-tab-context-menu",
+    (event, payload: { tabId: string; anchor: { x: number; y: number } }) => {
+      withShellContext(event.sender, (win, state) => {
+        options.menu.showTabContextMenu(
+          win,
+          state,
+          payload.tabId,
+          payload.anchor,
+        );
+      });
+    },
+  );
+
+  ipcMain.on("docked-shell:close-other-tabs", (event, tabId: string) => {
+    withShellContext(event.sender, (win, state) => {
+      options.shell.closeOtherTabs(win, state, tabId);
     });
   });
 
@@ -161,7 +213,12 @@ export function registerShellIpcHandlers(
       payload: { section: MenuSection; anchor: { x: number; y: number } },
     ) => {
       withShellContext(event.sender, (win, state) => {
-        options.menu.showMenuSection(win, state, payload.section, payload.anchor);
+        options.menu.showMenuSection(
+          win,
+          state,
+          payload.section,
+          payload.anchor,
+        );
       });
     },
   );
@@ -175,7 +232,9 @@ export function registerShellIpcHandlers(
         anchor: { x: number; y: number };
       },
     ) => {
-      const context = options.shell.getWindowContextFromWebContents(event.sender);
+      const context = options.shell.getWindowContextFromWebContents(
+        event.sender,
+      );
 
       if (!context) {
         return;
@@ -193,17 +252,23 @@ export function registerShellIpcHandlers(
     options.downloads.getDownloadsStateSnapshot(),
   );
 
-  ipcMain.on("downloads-popup:set-theme-source", (_event, themeSource: ThemeSource) => {
-    options.shell.setThemeSource(themeSource);
-  });
+  ipcMain.on(
+    "downloads-popup:set-theme-source",
+    (_event, themeSource: ThemeSource) => {
+      options.shell.setThemeSource(themeSource);
+    },
+  );
 
   ipcMain.handle("downloads-popup:open-item", (_event, id: string) => {
     return options.downloads.openDownloadItemById(id);
   });
 
-  ipcMain.handle("downloads-popup:show-item-in-folder", (_event, id: string) => {
-    return options.downloads.showDownloadItemInFolderById(id);
-  });
+  ipcMain.handle(
+    "downloads-popup:show-item-in-folder",
+    (_event, id: string) => {
+      return options.downloads.showDownloadItemInFolderById(id);
+    },
+  );
 
   ipcMain.handle("downloads-popup:retry-download", (_event, id: string) => {
     return options.downloads.retryDownloadItemById(id);
@@ -219,7 +284,9 @@ export function registerShellIpcHandlers(
 
   ipcMain.on("downloads-popup:open-downloads-page", () => {
     const hostWindow = options.shell.getLastFocusedShellWindow();
-    const state = hostWindow ? options.shell.getWindowState(hostWindow.id) : null;
+    const state = hostWindow
+      ? options.shell.getWindowState(hostWindow.id)
+      : null;
     if (!hostWindow || !state) {
       return;
     }
@@ -229,7 +296,9 @@ export function registerShellIpcHandlers(
 
   ipcMain.on("downloads-popup:open-downloads-settings", () => {
     const hostWindow = options.shell.getLastFocusedShellWindow();
-    const state = hostWindow ? options.shell.getWindowState(hostWindow.id) : null;
+    const state = hostWindow
+      ? options.shell.getWindowState(hostWindow.id)
+      : null;
     if (!hostWindow || !state) {
       return;
     }

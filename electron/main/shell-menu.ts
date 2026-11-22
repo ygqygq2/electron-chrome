@@ -1,21 +1,22 @@
 import {
   BrowserWindow,
+  clipboard,
   Menu,
   type MenuItemConstructorOptions,
 } from "electron";
 
+import type { DownloadsController } from "./downloads-controller.js";
 import { buildFavoritesMenuTemplate } from "./favorites-shell.js";
 import {
+  type BrowserShellState,
   DEFAULT_URL,
   DOCK_POSITIONS,
-  type BrowserShellState,
   type MenuSection,
   type RuntimePreferences,
   type ThemeSource,
   type ToolbarContextButtonId,
   type ToolbarPreferences,
 } from "./model.js";
-import type { DownloadsController } from "./downloads-controller.js";
 import type { ShellController } from "./shell-controller-types.js";
 
 export interface ShellMenuControllerOptions {
@@ -25,6 +26,7 @@ export interface ShellMenuControllerOptions {
   setThemeSource: (themeSource: ThemeSource) => void;
   shell: Pick<
     ShellController,
+    | "closeOtherTabs"
     | "closeTab"
     | "createTab"
     | "getActivePageView"
@@ -55,6 +57,12 @@ export interface ShellMenuController {
   showToolbarButtonContextMenu: (
     win: BrowserWindow,
     buttonId: ToolbarContextButtonId,
+    anchor: { x: number; y: number },
+  ) => void;
+  showTabContextMenu: (
+    win: BrowserWindow,
+    state: BrowserShellState,
+    tabId: string,
     anchor: { x: number; y: number },
   ) => void;
 }
@@ -153,9 +161,21 @@ export function createShellMenuController(
         "restoreClosedTab",
         "显示历史记录按钮",
       ),
-      buildToolbarVisibilityItem(toolbarPreferences, "favorites", "显示收藏夹按钮"),
-      buildToolbarVisibilityItem(toolbarPreferences, "downloads", "显示下载按钮"),
-      buildToolbarVisibilityItem(toolbarPreferences, "extensions", "显示扩展按钮"),
+      buildToolbarVisibilityItem(
+        toolbarPreferences,
+        "favorites",
+        "显示收藏夹按钮",
+      ),
+      buildToolbarVisibilityItem(
+        toolbarPreferences,
+        "downloads",
+        "显示下载按钮",
+      ),
+      buildToolbarVisibilityItem(
+        toolbarPreferences,
+        "extensions",
+        "显示扩展按钮",
+      ),
     ];
   }
 
@@ -188,7 +208,8 @@ export function createShellMenuController(
       {
         label: "新标签页",
         accelerator: "CmdOrCtrl+T",
-        click: () => shell.createTab(win, state, DEFAULT_URL, { activate: true }),
+        click: () =>
+          shell.createTab(win, state, DEFAULT_URL, { activate: true }),
       },
       {
         label: "关闭当前标签页",
@@ -242,7 +263,8 @@ export function createShellMenuController(
       {
         label: "新标签页",
         accelerator: "CmdOrCtrl+T",
-        click: () => shell.createTab(win, state, DEFAULT_URL, { activate: true }),
+        click: () =>
+          shell.createTab(win, state, DEFAULT_URL, { activate: true }),
       },
       {
         label: "设置",
@@ -266,7 +288,11 @@ export function createShellMenuController(
       {
         label: "收藏夹",
         click: () => shell.openFavoritesTab(win, state),
-        submenu: buildFavoritesMenuTemplate(win, state, shell.getFavoritesShellDeps()),
+        submenu: buildFavoritesMenuTemplate(
+          win,
+          state,
+          shell.getFavoritesShellDeps(),
+        ),
       },
       {
         label: "下载",
@@ -281,13 +307,17 @@ export function createShellMenuController(
         label: "后退",
         enabled: Boolean(shell.getActiveTab(state)?.canGoBack),
         click: () =>
-          shell.getActivePageView(state)?.webContents.navigationHistory.goBack(),
+          shell
+            .getActivePageView(state)
+            ?.webContents.navigationHistory.goBack(),
       },
       {
         label: "前进",
         enabled: Boolean(shell.getActiveTab(state)?.canGoForward),
         click: () =>
-          shell.getActivePageView(state)?.webContents.navigationHistory.goForward(),
+          shell
+            .getActivePageView(state)
+            ?.webContents.navigationHistory.goForward(),
       },
       {
         label: "刷新",
@@ -296,7 +326,9 @@ export function createShellMenuController(
       },
       { type: "separator" },
       {
-        label: state.devtoolsVisible ? "关闭停靠 DevTools" : "打开停靠 DevTools",
+        label: state.devtoolsVisible
+          ? "关闭停靠 DevTools"
+          : "打开停靠 DevTools",
         accelerator: "F12",
         click: () => shell.toggleDockedDevTools(win, state),
       },
@@ -318,7 +350,8 @@ export function createShellMenuController(
       {
         label: "在新标签页打开默认地址",
         accelerator: "CmdOrCtrl+Shift+T",
-        click: () => shell.createTab(win, state, DEFAULT_URL, { activate: true }),
+        click: () =>
+          shell.createTab(win, state, DEFAULT_URL, { activate: true }),
       },
       { type: "separator" },
       {
@@ -326,14 +359,18 @@ export function createShellMenuController(
         accelerator: "Alt+Left",
         enabled: Boolean(shell.getActiveTab(state)?.canGoBack),
         click: () =>
-          shell.getActivePageView(state)?.webContents.navigationHistory.goBack(),
+          shell
+            .getActivePageView(state)
+            ?.webContents.navigationHistory.goBack(),
       },
       {
         label: "前进",
         accelerator: "Alt+Right",
         enabled: Boolean(shell.getActiveTab(state)?.canGoForward),
         click: () =>
-          shell.getActivePageView(state)?.webContents.navigationHistory.goForward(),
+          shell
+            .getActivePageView(state)
+            ?.webContents.navigationHistory.goForward(),
       },
       {
         label: "刷新网页",
@@ -366,7 +403,8 @@ export function createShellMenuController(
             label: "底部",
             type: "radio",
             checked: state.dockPosition === DOCK_POSITIONS.bottom,
-            click: () => shell.setDockPosition(win, state, DOCK_POSITIONS.bottom),
+            click: () =>
+              shell.setDockPosition(win, state, DOCK_POSITIONS.bottom),
           },
           {
             label: "左侧",
@@ -378,7 +416,8 @@ export function createShellMenuController(
             label: "右侧",
             type: "radio",
             checked: state.dockPosition === DOCK_POSITIONS.right,
-            click: () => shell.setDockPosition(win, state, DOCK_POSITIONS.right),
+            click: () =>
+              shell.setDockPosition(win, state, DOCK_POSITIONS.right),
           },
         ],
       },
@@ -405,7 +444,11 @@ export function createShellMenuController(
           : section === "downloads"
             ? buildDownloadsMenuTemplate(win, state)
             : section === "favorites"
-              ? buildFavoritesMenuTemplate(win, state, shell.getFavoritesShellDeps())
+              ? buildFavoritesMenuTemplate(
+                  win,
+                  state,
+                  shell.getFavoritesShellDeps(),
+                )
               : section === "debug"
                 ? buildDebugMenuTemplate(win, state)
                 : buildAppMenuTemplate(win, state);
@@ -452,9 +495,56 @@ export function createShellMenuController(
     });
   }
 
+  function showTabContextMenu(
+    win: BrowserWindow,
+    state: BrowserShellState,
+    tabId: string,
+    anchor: { x: number; y: number },
+  ) {
+    const tab = state.tabs.find((item) => item.id === tabId);
+
+    if (!tab) {
+      return;
+    }
+
+    const template: MenuItemConstructorOptions[] = [
+      {
+        label: "复制网址",
+        enabled: Boolean(tab.url),
+        click: () => {
+          clipboard.writeText(tab.url);
+        },
+      },
+      {
+        label: "关闭其他标签页",
+        enabled: state.tabs.length > 1,
+        click: () => {
+          shell.closeOtherTabs(win, state, tabId);
+        },
+      },
+      {
+        type: "separator",
+      },
+      {
+        label: "关闭标签页",
+        enabled: state.tabs.length > 1,
+        click: () => {
+          shell.closeTab(win, state, tabId);
+        },
+      },
+    ];
+
+    Menu.buildFromTemplate(template).popup({
+      window: win,
+      x: Math.round(anchor.x),
+      y: Math.round(anchor.y),
+    });
+  }
+
   return {
     buildMenu,
     showMenuSection,
     showToolbarButtonContextMenu,
+    showTabContextMenu,
   };
 }

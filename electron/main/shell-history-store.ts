@@ -1,13 +1,10 @@
 import {
-  MAX_HISTORY_ENTRIES,
-  type BrowserHistoryEntry,
-} from "./model.js";
-import {
   createHistoryEntryId,
   readBrowserHistory,
   shouldRecordHistoryUrl,
   writeBrowserHistory,
 } from "./local-persistence.js";
+import { type BrowserHistoryEntry, MAX_HISTORY_ENTRIES } from "./model.js";
 
 export interface BrowserHistoryStore {
   clear: () => void;

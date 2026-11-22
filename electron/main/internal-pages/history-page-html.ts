@@ -19,7 +19,8 @@ export function createHistoryPageHtml(
     .replace(/\u2029/g, "\\u2029");
   const initialDayGroups = groupHistoryByDay(historyEntries);
   const initialMonthGroups = buildHistoryMonthGroups(initialDayGroups);
-  const initialSelectedDayKey = getDefaultHistorySelectedDayKey(initialDayGroups);
+  const initialSelectedDayKey =
+    getDefaultHistorySelectedDayKey(initialDayGroups);
   const initialVisibleDayGroups = initialSelectedDayKey
     ? initialDayGroups.filter((group) => group.key === initialSelectedDayKey)
     : initialDayGroups;

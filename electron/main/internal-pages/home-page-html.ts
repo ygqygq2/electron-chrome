@@ -267,11 +267,15 @@ export function createHomePageHtml(theme: ThemeSnapshot) {
           ${chips.map((chip) => `<a class="chip" href="${chip.url}">${chip.label}</a>`).join("")}
         </div>
         <div class="sites">
-          ${shortcuts.map((site) => `
+          ${shortcuts
+            .map(
+              (site) => `
                 <a class="site" href="${site.url}">
                   <div class="site-icon">${site.icon}</div>
                   <div class="site-label">${site.label}</div>
-                </a>`).join("")}
+                </a>`,
+            )
+            .join("")}
         </div>
       </section>
     </main>

@@ -1,9 +1,9 @@
 import {
-  INTERNAL_HOME_URL,
   INTERNAL_DOWNLOADS_URL,
   INTERNAL_EXTENSIONS_URL,
   INTERNAL_FAVORITES_URL,
   INTERNAL_HISTORY_URL,
+  INTERNAL_HOME_URL,
   INTERNAL_SETTINGS_URL,
   SETTINGS_SECTIONS,
   type SettingsSection,
@@ -118,7 +118,9 @@ export function getFavoritesActionFromUrl(url: string) {
   return null;
 }
 
-export function normalizeSettingsSection(value: string | undefined): SettingsSection {
+export function normalizeSettingsSection(
+  value: string | undefined,
+): SettingsSection {
   const normalized = (value ?? "").trim();
   return SETTINGS_SECTIONS.some((section) => section.id === normalized)
     ? (normalized as SettingsSection)

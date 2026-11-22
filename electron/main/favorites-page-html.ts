@@ -1,7 +1,4 @@
-import type {
-  FavoritesStateSnapshot,
-  ThemeSnapshot,
-} from "./model.js";
+import type { FavoritesStateSnapshot, ThemeSnapshot } from "./model.js";
 
 function escapeHtml(value: string | undefined) {
   return String(value || "")

@@ -413,6 +413,69 @@ html[data-theme="dark"] .tab-close:hover {
   padding-top: 1px;
 }
 
+.find-bar {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  height: 42px;
+  padding: 0 12px;
+  background: var(--shell-toolbar-bg);
+  border-bottom: 1px solid var(--shell-divider);
+  -webkit-app-region: no-drag;
+}
+
+.find-bar.hidden {
+  display: none;
+}
+
+.find-input {
+  width: 220px;
+  height: 28px;
+  padding: 0 10px;
+  font-size: 13px;
+  color: var(--text-strong);
+  background: var(--shell-address-bg, var(--chrome-strip-bg));
+  border: 1px solid var(--shell-divider);
+  border-radius: 14px;
+  outline: none;
+}
+
+.find-input:focus {
+  border-color: var(--accent-1);
+}
+
+.find-result {
+  min-width: 44px;
+  font-size: 12px;
+  color: var(--text-muted);
+  text-align: center;
+  white-space: nowrap;
+}
+
+.find-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  color: var(--text-normal);
+  cursor: pointer;
+  background: transparent;
+  border: 0;
+  border-radius: var(--radius-xs, 6px);
+}
+
+.find-button:hover {
+  background: var(--chrome-strip-hover);
+  color: var(--text-strong);
+}
+
+.find-button .toolbar-icon {
+  width: 16px;
+  height: 16px;
+}
+
 .nav-group {
   display: flex;
   gap: 2px;

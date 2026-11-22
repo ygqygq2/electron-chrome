@@ -58,6 +58,20 @@ const maximizeWindowButton = document.getElementById(
 const closeWindowButton = document.getElementById(
   "closeWindowButton",
 ) as HTMLButtonElement;
+const findBar = document.getElementById("findBar") as HTMLDivElement;
+const findInput = document.getElementById("findInput") as HTMLInputElement;
+const findResultText = document.getElementById(
+  "findResultText",
+) as HTMLSpanElement;
+const findPrevButton = document.getElementById(
+  "findPrevButton",
+) as HTMLButtonElement;
+const findNextButton = document.getElementById(
+  "findNextButton",
+) as HTMLButtonElement;
+const findCloseButton = document.getElementById(
+  "findCloseButton",
+) as HTMLButtonElement;
 
 const ICON_MARKUP: Record<string, string> = {
   "icon-add":
@@ -153,6 +167,7 @@ let currentState: DockedShellStateSnapshot = {
   canRestoreClosedTab: false,
   currentPageCanFavorite: false,
   currentPageIsFavorite: false,
+  findBarVisible: false,
   devtoolsVisible: false,
   dockPosition: "bottom",
   theme: {
@@ -308,6 +323,18 @@ function getVisibleTabsLayout() {
   };
 }
 
+function updateFindBarVisibility() {
+  findBar.classList.toggle("hidden", !currentState.findBarVisible);
+
+  if (!currentState.findBarVisible) {
+    findResultText.textContent = "0/0";
+  }
+}
+
+function runFind(options: { forward?: boolean; findNext?: boolean } = {}) {
+  window.dockedShell.findInPage(findInput.value, options);
+}
+
 function updateStatus() {
   const tab = getActiveTab();
   if (!tab) {
@@ -458,6 +485,13 @@ function createTabElement(tab: DockedShellTabSnapshot, tabWidth: number) {
 
   tabEl.append(iconEl, titleEl, closeEl);
   tabEl.addEventListener("click", () => window.dockedShell.activateTab(tab.id));
+  tabEl.addEventListener("contextmenu", (event) => {
+    event.preventDefault();
+    window.dockedShell.showTabContextMenu(tab.id, {
+      x: event.clientX,
+      y: event.clientY,
+    });
+  });
   return tabEl;
 }
 
@@ -501,6 +535,7 @@ function applyState(state: DockedShellStateSnapshot | null) {
   updateNavigationButtons();
   renderFavoritesButtonState();
   updateStatus();
+  updateFindBarVisibility();
   updateWindowControls();
 }
 
@@ -565,6 +600,29 @@ urlInput.addEventListener("blur", () => {
 backButton.addEventListener("click", () => window.dockedShell.goBack());
 forwardButton.addEventListener("click", () => window.dockedShell.goForward());
 reloadButton.addEventListener("click", () => window.dockedShell.reload());
+
+findInput.addEventListener("input", () => runFind());
+findInput.addEventListener("keydown", (event) => {
+  if (event.key === "Enter") {
+    event.preventDefault();
+    runFind({ forward: !event.shiftKey, findNext: true });
+    return;
+  }
+
+  if (event.key === "Escape") {
+    event.preventDefault();
+    window.dockedShell.hideFindBar();
+  }
+});
+findNextButton.addEventListener("click", () =>
+  runFind({ forward: true, findNext: true }),
+);
+findPrevButton.addEventListener("click", () =>
+  runFind({ forward: false, findNext: true }),
+);
+findCloseButton.addEventListener("click", () => {
+  window.dockedShell.hideFindBar();
+});
 restoreTabButton.addEventListener("click", () => {
   isEditingUrl = false;
   window.dockedShell.navigate("chrome://history");
@@ -574,7 +632,10 @@ restoreTabButton.addEventListener("contextmenu", (event) => {
   showToolbarButtonContextMenu(restoreTabButton, "restoreClosedTab");
 });
 favoritesButton.addEventListener("click", () => {
-  if (!currentState.currentPageCanFavorite || currentState.currentPageIsFavorite) {
+  if (
+    !currentState.currentPageCanFavorite ||
+    currentState.currentPageIsFavorite
+  ) {
     return;
   }
 
@@ -626,4 +687,19 @@ ensureButtonIcon(minimizeWindowButton, "icon-minimize");
 ensureButtonIcon(closeWindowButton, "icon-close");
 
 window.dockedShell.onStateChanged(applyState);
+window.dockedShell.onFocusUrlInput(() => {
+  isEditingUrl = true;
+  urlInput.focus();
+  urlInput.select();
+});
+window.dockedShell.onFindBarShown(() => {
+  findInput.focus();
+  findInput.select();
+});
+window.dockedShell.onFindBarResult((result) => {
+  findResultText.textContent =
+    result.matches > 0
+      ? `${result.activeMatchOrdinal}/${result.matches}`
+      : "0/0";
+});
 void window.dockedShell.getState().then(applyState);

@@ -5,11 +5,11 @@ import path from "node:path";
 import { app, nativeTheme } from "electron";
 
 import {
+  type BrowserHistoryEntry,
   DEFAULT_TOOLBAR_PREFERENCES,
   type FavoriteEntry,
   type FavoritesStateSnapshot,
   MAX_HISTORY_ENTRIES,
-  type BrowserHistoryEntry,
   type ResolvedTheme,
   type RuntimePreferences,
   type ThemeSnapshot,
@@ -143,7 +143,9 @@ function normalizeFavoriteFolders(value: unknown) {
     });
   }
 
-  return Array.from(normalized).sort((left, right) => left.localeCompare(right, "zh-CN"));
+  return Array.from(normalized).sort((left, right) =>
+    left.localeCompare(right, "zh-CN"),
+  );
 }
 
 function normalizeFavoriteEntries(value: unknown): FavoriteEntry[] {
@@ -160,9 +162,11 @@ function normalizeFavoriteEntries(value: unknown): FavoriteEntry[] {
 
     const candidate = item as Partial<FavoriteEntry>;
     const id = typeof candidate.id === "string" ? candidate.id.trim() : "";
-    const title = typeof candidate.title === "string" ? candidate.title.trim() : "";
+    const title =
+      typeof candidate.title === "string" ? candidate.title.trim() : "";
     const url = typeof candidate.url === "string" ? candidate.url.trim() : "";
-    const folder = typeof candidate.folder === "string" ? candidate.folder.trim() : "收藏栏";
+    const folder =
+      typeof candidate.folder === "string" ? candidate.folder.trim() : "收藏栏";
     const createdAt =
       typeof candidate.createdAt === "string" && candidate.createdAt.trim()
         ? candidate.createdAt.trim()
@@ -312,7 +316,11 @@ function getHistoryMetadataValue(db: SqliteDatabase, key: string) {
   return typeof row?.value === "string" ? row.value : null;
 }
 
-function setHistoryMetadataValue(db: SqliteDatabase, key: string, value: string) {
+function setHistoryMetadataValue(
+  db: SqliteDatabase,
+  key: string,
+  value: string,
+) {
   db.prepare(
     `
       INSERT INTO metadata (key, value, updated_at)
@@ -408,9 +416,9 @@ function writeBrowserHistoryToDb(
 function migrateHistoryDatabaseIfNeeded(db: SqliteDatabase) {
   const schemaVersion = getHistoryMetadataValue(db, "schema-version");
   const row = db
-    .prepare<{ count: number }>(
-      "SELECT COUNT(*) AS count FROM history_visit_entries",
-    )
+    .prepare<{
+      count: number;
+    }>("SELECT COUNT(*) AS count FROM history_visit_entries")
     .get();
   const hasHistoryRows = Number(row?.count ?? 0) > 0;
 
@@ -439,7 +447,9 @@ function getHistoryDatabase() {
     const db = new DatabaseSync(databasePath);
     initializeHistoryDatabaseSchema(db);
     try {
-      db.prepare("ALTER TABLE history_visit_entries ADD COLUMN closed_at TEXT").run();
+      db.prepare(
+        "ALTER TABLE history_visit_entries ADD COLUMN closed_at TEXT",
+      ).run();
     } catch {
       // ignore existing column
     }
@@ -491,7 +501,11 @@ export function writeBrowserHistory(entries: BrowserHistoryEntry[]) {
 
   const historyPath = getBrowserHistoryPath();
   fs.mkdirSync(path.dirname(historyPath), { recursive: true });
-  fs.writeFileSync(historyPath, JSON.stringify(normalizedEntries, null, 2), "utf8");
+  fs.writeFileSync(
+    historyPath,
+    JSON.stringify(normalizedEntries, null, 2),
+    "utf8",
+  );
 }
 
 export function createHistoryEntryId() {
@@ -540,7 +554,11 @@ export function writeFavoritesState(state: FavoritesStateSnapshot) {
   const normalized = normalizeFavoritesState(state);
 
   fs.mkdirSync(path.dirname(favoritesDataPath), { recursive: true });
-  fs.writeFileSync(favoritesDataPath, JSON.stringify(normalized, null, 2), "utf8");
+  fs.writeFileSync(
+    favoritesDataPath,
+    JSON.stringify(normalized, null, 2),
+    "utf8",
+  );
 }
 
 export function readRuntimePreferences(): RuntimePreferences {

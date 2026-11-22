@@ -15,17 +15,17 @@ import {
 import { createDownloadsController } from "./main/downloads-controller.js";
 import { createFavoritesController } from "./main/favorites-controller.js";
 import {
-  DEFAULT_URL,
-  GPU_COMPAT_RELAUNCH_ARG,
-  buildDesktopChromeUserAgent,
-  getWindowBackgroundColor,
-  type RuntimeInfoSnapshot,
-} from "./main/model.js";
-import {
   readFavoritesState,
   readRuntimePreferences,
   writeRuntimePreferences,
 } from "./main/local-persistence.js";
+import {
+  buildDesktopChromeUserAgent,
+  DEFAULT_URL,
+  getWindowBackgroundColor,
+  GPU_COMPAT_RELAUNCH_ARG,
+  type RuntimeInfoSnapshot,
+} from "./main/model.js";
 import { createShellController } from "./main/shell-core.js";
 import { registerShellIpcHandlers } from "./main/shell-ipc.js";
 import { createShellMenuController } from "./main/shell-menu.js";
@@ -140,10 +140,16 @@ const shellController = createShellController({
 const downloadsController = createDownloadsController({
   getActiveDownloadTargetWebContents: () => {
     const hostWindow = shellController.getLastFocusedShellWindow();
-    const state = hostWindow ? shellController.getWindowState(hostWindow.id) : null;
-    return state ? shellController.getActivePageView(state)?.webContents ?? null : null;
+    const state = hostWindow
+      ? shellController.getWindowState(hostWindow.id)
+      : null;
+    return state
+      ? (shellController.getActivePageView(state)?.webContents ?? null)
+      : null;
   },
   getLastFocusedShellWindow: () => shellController.getLastFocusedShellWindow(),
+  getPersistenceFilePath: () =>
+    path.join(app.getPath("userData"), "downloads-history.json"),
   getPreloadPath: () => path.join(__dirname, "preload.mjs"),
   getThemeSnapshot: () => shellController.getCurrentThemeSnapshot(),
 });
@@ -178,8 +184,8 @@ function createDockedWindow() {
 
   const state = shellController.createWindowState(devtoolsView);
   shellController.registerWindow(win, state);
-  shellController.attachDevToolsToggleShortcut(win.webContents, win, state);
-  shellController.attachDevToolsToggleShortcut(
+  shellController.attachTabKeyboardShortcuts(win.webContents, win, state);
+  shellController.attachTabKeyboardShortcuts(
     devtoolsView.webContents,
     win,
     state,

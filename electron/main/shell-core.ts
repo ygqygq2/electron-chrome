@@ -1,31 +1,12 @@
 import {
   BrowserWindow,
   Menu,
-  WebContentsView,
+  type MenuItemConstructorOptions,
   nativeTheme,
   type WebContents,
-  type MenuItemConstructorOptions,
+  WebContentsView,
 } from "electron";
 
-import {
-  DEFAULT_URL,
-  INTERNAL_DOWNLOADS_URL,
-  INTERNAL_EXTENSIONS_URL,
-  INTERNAL_HISTORY_URL,
-  INTERNAL_SETTINGS_URL,
-  CONTROLS_HEIGHT,
-  DEFAULT_DOCK_HEIGHT,
-  DEFAULT_DOCK_WIDTH,
-  DOCK_POSITIONS,
-  SETTINGS_SECTIONS,
-  buildDesktopChromeUserAgent,
-  getWindowBackgroundColor,
-  type DockPosition,
-  type BrowserTab,
-  type BrowserShellState,
-  type ThemeSource,
-  type ToolbarPreferences,
-} from "./model.js";
 import {
   handleFavoritesUrlAction,
   openFavoritesTab,
@@ -39,6 +20,37 @@ import {
   writeRuntimePreferences,
 } from "./local-persistence.js";
 import {
+  type BrowserShellState,
+  type BrowserTab,
+  buildDesktopChromeUserAgent,
+  CONTROLS_HEIGHT,
+  DEFAULT_DOCK_HEIGHT,
+  DEFAULT_DOCK_WIDTH,
+  DEFAULT_URL,
+  DOCK_POSITIONS,
+  type DockPosition,
+  FIND_BAR_HEIGHT,
+  getWindowBackgroundColor,
+  INTERNAL_DOWNLOADS_URL,
+  INTERNAL_EXTENSIONS_URL,
+  INTERNAL_HISTORY_URL,
+  INTERNAL_SETTINGS_URL,
+  SETTINGS_SECTIONS,
+  type ThemeSource,
+  type ToolbarPreferences,
+} from "./model.js";
+import { createInternalPageDataUrl } from "./page-html.js";
+import type {
+  ShellController,
+  ShellControllerOptions,
+} from "./shell-controller-types.js";
+import { queueTabFaviconUpdate } from "./shell-favicon.js";
+import { createBrowserHistoryStore } from "./shell-history-store.js";
+import {
+  getShellStateSnapshot,
+  sendShellStateToWindow,
+} from "./shell-state-snapshot.js";
+import {
   getHistoryActionFromUrl,
   getInternalPageDisplayUrl,
   getSettingsSectionFromUrl,
@@ -50,17 +62,6 @@ import {
   isInternalRenderedUrl,
   isSettingsUrl,
 } from "./url-utils.js";
-import { createInternalPageDataUrl } from "./page-html.js";
-import { queueTabFaviconUpdate } from "./shell-favicon.js";
-import { createBrowserHistoryStore } from "./shell-history-store.js";
-import {
-  getShellStateSnapshot,
-  sendShellStateToWindow,
-} from "./shell-state-snapshot.js";
-import type {
-  ShellController,
-  ShellControllerOptions,
-} from "./shell-controller-types.js";
 
 const DESKTOP_CHROME_USER_AGENT = buildDesktopChromeUserAgent();
 const MAX_CLOSED_TAB_HISTORY = 12;
@@ -82,6 +83,26 @@ export function createShellController(
     );
   }
 
+  function isFindShortcut(input: Electron.Input) {
+    return (
+      input.type === "keyDown" && Boolean(input.control) && input.key === "f"
+    );
+  }
+
+  function isFocusAddressBarShortcut(input: Electron.Input) {
+    return (
+      input.type === "keyDown" && Boolean(input.control) && input.key === "l"
+    );
+  }
+
+  function isZoomShortcut(input: Electron.Input) {
+    if (input.type !== "keyDown" || !input.control) {
+      return false;
+    }
+
+    return input.key === "=" || input.key === "-" || input.key === "0";
+  }
+
   function createTabId() {
     return `tab-${Date.now()}-${Math.random().toString(16).slice(2, 8)}`;
   }
@@ -101,7 +122,8 @@ export function createShellController(
     }
 
     return (
-      BrowserWindow.getAllWindows().find((win) => windowStates.has(win.id)) ?? null
+      BrowserWindow.getAllWindows().find((win) => windowStates.has(win.id)) ??
+      null
     );
   }
 
@@ -156,9 +178,11 @@ export function createShellController(
     if (isInternalPageUrl(nextUrl)) {
       tab.iconUrl = undefined;
       tab.title = isSettingsUrl(nextUrl)
-        ? `设置 · ${(SETTINGS_SECTIONS.find(
-            (section) => section.id === getSettingsSectionFromUrl(nextUrl),
-          )?.label ?? "基础偏好")}`
+        ? `设置 · ${
+            SETTINGS_SECTIONS.find(
+              (section) => section.id === getSettingsSectionFromUrl(nextUrl),
+            )?.label ?? "基础偏好"
+          }`
         : isDownloadsUrl(nextUrl)
           ? "下载"
           : isExtensionsUrl(nextUrl)
@@ -187,7 +211,10 @@ export function createShellController(
     return getShellStateSnapshot(state, favoritesController);
   }
 
-  function quickFavoriteActiveTab(win: BrowserWindow, state: BrowserShellState) {
+  function quickFavoriteActiveTab(
+    win: BrowserWindow,
+    state: BrowserShellState,
+  ) {
     const activeTab = getActiveTab(state);
 
     if (!activeTab?.url || isInternalPageUrl(activeTab.url)) {
@@ -369,7 +396,8 @@ export function createShellController(
   function layoutViews(win: BrowserWindow, state: BrowserShellState) {
     const { width, height } = win.getContentBounds();
     const activePageView = getActivePageView(state);
-    const contentTop = CONTROLS_HEIGHT;
+    const contentTop =
+      CONTROLS_HEIGHT + (state.findBarVisible ? FIND_BAR_HEIGHT : 0);
     const contentHeight = Math.max(0, height - contentTop);
 
     if (!activePageView) {
@@ -434,7 +462,12 @@ export function createShellController(
       Math.max(260, Math.floor(contentHeight * 0.45)),
     );
     const pageHeight = Math.max(0, contentHeight - devtoolsHeight);
-    activePageView.setBounds({ x: 0, y: contentTop, width, height: pageHeight });
+    activePageView.setBounds({
+      x: 0,
+      y: contentTop,
+      width,
+      height: pageHeight,
+    });
     state.devtoolsView.setBounds({
       x: 0,
       y: contentTop + pageHeight,
@@ -622,18 +655,143 @@ export function createShellController(
     createTab(win, state, lastClosedTab.url, { activate: true });
   }
 
-  function attachDevToolsToggleShortcut(
+  function attachTabKeyboardShortcuts(
     contents: WebContents,
     win: BrowserWindow,
     state: BrowserShellState,
   ) {
     contents.on("before-input-event", (event, input) => {
-      if (!isDevToolsToggleShortcut(input)) {
+      if (isDevToolsToggleShortcut(input)) {
+        event.preventDefault();
+        toggleDockedDevTools(win, state);
         return;
       }
-      event.preventDefault();
-      toggleDockedDevTools(win, state);
+
+      if (isFindShortcut(input)) {
+        event.preventDefault();
+        startFindInPage(win, state);
+        return;
+      }
+
+      if (isFocusAddressBarShortcut(input)) {
+        event.preventDefault();
+        sendShellUiEvent(win, "docked-shell:focus-url-input");
+        return;
+      }
+
+      if (isZoomShortcut(input)) {
+        event.preventDefault();
+        zoomActiveTab(state, input.key);
+      }
     });
+  }
+
+  function sendShellUiEvent(
+    win: BrowserWindow,
+    channel:
+      | "docked-shell:focus-url-input"
+      | "docked-shell:find-bar-shown"
+      | "docked-shell:find-bar-result",
+    payload?: unknown,
+  ) {
+    if (win.isDestroyed() || win.webContents.isDestroyed()) {
+      return;
+    }
+
+    try {
+      win.webContents.send(channel, payload);
+    } catch {
+      // 窗口销毁过程中的事件发送失败可安全忽略
+    }
+  }
+
+  function zoomActiveTab(state: BrowserShellState, key: string) {
+    const pageView = getActivePageView(state);
+    if (!pageView) {
+      return;
+    }
+
+    const { webContents } = pageView;
+
+    if (key === "0") {
+      webContents.setZoomLevel(0);
+      return;
+    }
+
+    const currentLevel = webContents.getZoomLevel();
+    webContents.setZoomLevel(currentLevel + (key === "=" ? 1 : -1));
+  }
+
+  function startFindInPage(win: BrowserWindow, state: BrowserShellState) {
+    state.findBarVisible = true;
+    layoutViews(win, state);
+    notifyStateChanged(win, state);
+    sendShellUiEvent(win, "docked-shell:find-bar-shown");
+  }
+
+  function hideFindBar(win: BrowserWindow, state: BrowserShellState) {
+    if (!state.findBarVisible) {
+      return;
+    }
+
+    const activePageView = getActivePageView(state);
+    if (activePageView && !activePageView.webContents.isDestroyed()) {
+      activePageView.webContents.stopFindInPage("clearSelection");
+    }
+
+    state.findBarVisible = false;
+    layoutViews(win, state);
+    notifyStateChanged(win, state);
+  }
+
+  function performFindInPage(
+    win: BrowserWindow,
+    state: BrowserShellState,
+    query: string,
+    options: { forward?: boolean; findNext?: boolean } = {},
+  ) {
+    const activePageView = getActivePageView(state);
+    if (!activePageView || activePageView.webContents.isDestroyed()) {
+      return;
+    }
+
+    const trimmedQuery = query.trim();
+    const { webContents } = activePageView;
+
+    if (!trimmedQuery) {
+      webContents.stopFindInPage("clearSelection");
+      sendShellUiEvent(win, "docked-shell:find-bar-result", {
+        activeMatchOrdinal: 0,
+        matches: 0,
+      });
+      return;
+    }
+
+    webContents.findInPage(trimmedQuery, {
+      forward: options.forward !== false,
+      findNext: options.findNext === true,
+    });
+
+    webContents.once("found-in-page", (_event, result) => {
+      sendShellUiEvent(win, "docked-shell:find-bar-result", {
+        activeMatchOrdinal: result.activeMatchOrdinal,
+        matches: result.matches,
+      });
+    });
+  }
+
+  function closeOtherTabs(
+    win: BrowserWindow,
+    state: BrowserShellState,
+    tabId: string,
+  ) {
+    const targetIds = state.tabs
+      .map((tab) => tab.id)
+      .filter((id) => id !== tabId);
+
+    for (const id of targetIds) {
+      closeTab(win, state, id);
+    }
   }
 
   function createTab(
@@ -663,7 +821,7 @@ export function createShellController(
       pageView,
     };
 
-    attachDevToolsToggleShortcut(pageView.webContents, win, state);
+    attachTabKeyboardShortcuts(pageView.webContents, win, state);
 
     pageView.webContents.setWindowOpenHandler(({ url }) => {
       if (url) {
@@ -689,7 +847,14 @@ export function createShellController(
     });
 
     pageView.webContents.on("page-favicon-updated", (_event, favicons) => {
-      queueTabFaviconUpdate(win, state, tab, tab.url, notifyStateChanged, favicons);
+      queueTabFaviconUpdate(
+        win,
+        state,
+        tab,
+        tab.url,
+        notifyStateChanged,
+        favicons,
+      );
     });
 
     pageView.webContents.on("did-start-loading", () => {
@@ -775,7 +940,11 @@ export function createShellController(
     return tab;
   }
 
-  function closeTab(win: BrowserWindow, state: BrowserShellState, tabId: string) {
+  function closeTab(
+    win: BrowserWindow,
+    state: BrowserShellState,
+    tabId: string,
+  ) {
     if (state.tabs.length <= 1) {
       return;
     }
@@ -795,7 +964,9 @@ export function createShellController(
         title: tab.title,
         url: tab.url,
       });
-      state.closedTabHistory = state.closedTabHistory.slice(-MAX_CLOSED_TAB_HISTORY);
+      state.closedTabHistory = state.closedTabHistory.slice(
+        -MAX_CLOSED_TAB_HISTORY,
+      );
       browserHistoryStore.markClosed(tab.url);
     }
 
@@ -813,7 +984,8 @@ export function createShellController(
     }
 
     if (state.activeTabId === tabId) {
-      const fallback = state.tabs[Math.max(0, index - 1)] ?? state.tabs[0] ?? null;
+      const fallback =
+        state.tabs[Math.max(0, index - 1)] ?? state.tabs[0] ?? null;
       state.activeTabId = fallback?.id ?? null;
     }
 
@@ -834,6 +1006,7 @@ export function createShellController(
   function createWindowState(devtoolsView: WebContentsView): BrowserShellState {
     return {
       closedTabHistory: [],
+      findBarVisible: false,
       devtoolsView,
       devtoolsVisible: false,
       dockPosition: DOCK_POSITIONS.bottom,
@@ -906,7 +1079,8 @@ export function createShellController(
 
   return {
     activateTab,
-    attachDevToolsToggleShortcut,
+    attachTabKeyboardShortcuts,
+    closeOtherTabs,
     closeTab,
     createTab,
     createWindowState,
@@ -920,10 +1094,13 @@ export function createShellController(
     getWindowState,
     handleNativeThemeUpdated,
     handleWindowClosed,
+    hideFindBar,
     layoutViews,
     markWindowFocused,
     navigateActiveTab,
     notifyStateChanged,
+    performFindInPage,
+    startFindInPage,
     openDownloadsTab,
     openExtensionsTab,
     openFavoritesTab: openFavoritesManagerTab,

@@ -1,8 +1,6 @@
 import { contextBridge, ipcRenderer } from "electron";
 
-import type {
-  DownloadsStateSnapshot,
-} from "./main/model.js";
+import type { DownloadsStateSnapshot } from "./main/model.js";
 
 export type DockedShellGpuMode = "hardware" | "compatibility" | "limited";
 export type DockedShellThemeSource = "system" | "light" | "dark";
@@ -67,6 +65,7 @@ export interface DockedShellStateSnapshot {
   canRestoreClosedTab: boolean;
   currentPageCanFavorite: boolean;
   currentPageIsFavorite: boolean;
+  findBarVisible: boolean;
   devtoolsVisible: boolean;
   dockPosition: "bottom" | "left" | "right";
   runtimeInfo: DockedShellRuntimeInfoSnapshot;
@@ -101,7 +100,22 @@ contextBridge.exposeInMainWorld("dockedShell", {
   goBack: () => ipcRenderer.send("docked-shell:go-back"),
   goForward: () => ipcRenderer.send("docked-shell:go-forward"),
   reload: () => ipcRenderer.send("docked-shell:reload"),
-  openDownloadsPopup: () => ipcRenderer.send("docked-shell:open-downloads-popup"),
+  findInPage: (
+    query: string,
+    options?: { forward?: boolean; findNext?: boolean },
+  ) =>
+    ipcRenderer.invoke("docked-shell:find-in-page", {
+      query,
+      forward: options?.forward,
+      findNext: options?.findNext,
+    }),
+  hideFindBar: () => ipcRenderer.send("docked-shell:find-bar-hide"),
+  showTabContextMenu: (tabId: string, anchor: DockedShellMenuAnchor) =>
+    ipcRenderer.invoke("docked-shell:show-tab-context-menu", { tabId, anchor }),
+  closeOtherTabs: (tabId: string) =>
+    ipcRenderer.send("docked-shell:close-other-tabs", tabId),
+  openDownloadsPopup: () =>
+    ipcRenderer.send("docked-shell:open-downloads-popup"),
   minimizeWindow: () => ipcRenderer.send("docked-shell:minimize-window"),
   toggleMaximizeWindow: () =>
     ipcRenderer.send("docked-shell:toggle-maximize-window"),
@@ -124,6 +138,29 @@ contextBridge.exposeInMainWorld("dockedShell", {
     ipcRenderer.on("docked-shell:state", listener);
     return () => ipcRenderer.removeListener("docked-shell:state", listener);
   },
+  onFocusUrlInput: (callback: () => void) => {
+    const listener = () => callback();
+    ipcRenderer.on("docked-shell:focus-url-input", listener);
+    return () =>
+      ipcRenderer.removeListener("docked-shell:focus-url-input", listener);
+  },
+  onFindBarShown: (callback: () => void) => {
+    const listener = () => callback();
+    ipcRenderer.on("docked-shell:find-bar-shown", listener);
+    return () =>
+      ipcRenderer.removeListener("docked-shell:find-bar-shown", listener);
+  },
+  onFindBarResult: (
+    callback: (result: { activeMatchOrdinal: number; matches: number }) => void,
+  ) => {
+    const listener = (
+      _event: Electron.IpcRendererEvent,
+      payload: { activeMatchOrdinal: number; matches: number },
+    ) => callback(payload);
+    ipcRenderer.on("docked-shell:find-bar-result", listener);
+    return () =>
+      ipcRenderer.removeListener("docked-shell:find-bar-result", listener);
+  },
 });
 
 contextBridge.exposeInMainWorld("downloadsPopup", {
@@ -139,13 +176,13 @@ contextBridge.exposeInMainWorld("downloadsPopup", {
   retryDownload: (id: string) =>
     ipcRenderer.invoke("downloads-popup:retry-download", id),
   clearCompleted: () => ipcRenderer.send("downloads-popup:clear-completed"),
-  removeItem: (id: string) => ipcRenderer.send("downloads-popup:remove-item", id),
-  openDownloadsPage: () => ipcRenderer.send("downloads-popup:open-downloads-page"),
+  removeItem: (id: string) =>
+    ipcRenderer.send("downloads-popup:remove-item", id),
+  openDownloadsPage: () =>
+    ipcRenderer.send("downloads-popup:open-downloads-page"),
   openDownloadsSettings: () =>
     ipcRenderer.send("downloads-popup:open-downloads-settings"),
-  onStateChanged: (
-    callback: (state: DownloadsPopupStateSnapshot) => void,
-  ) => {
+  onStateChanged: (callback: (state: DownloadsPopupStateSnapshot) => void) => {
     const listener = (
       _event: Electron.IpcRendererEvent,
       payload: DownloadsPopupStateSnapshot,

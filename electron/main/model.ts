@@ -9,6 +9,7 @@ export const INTERNAL_FAVORITES_URL = "chrome://favorites";
 export const INTERNAL_HISTORY_URL = "chrome://history";
 export const INTERNAL_SETTINGS_URL = "chrome://settings";
 export const CONTROLS_HEIGHT = 136;
+export const FIND_BAR_HEIGHT = 42;
 export const DEFAULT_DOCK_HEIGHT = 360;
 export const DEFAULT_DOCK_WIDTH = 520;
 export const MAX_HISTORY_ENTRIES = 240;
@@ -47,8 +48,7 @@ export interface ToolbarVisibilityPreference {
   visible: boolean;
 }
 
-export interface ToolbarPlacementPreference
-  extends ToolbarVisibilityPreference {
+export interface ToolbarPlacementPreference extends ToolbarVisibilityPreference {
   placement: ToolbarPlacement;
 }
 
@@ -167,6 +167,7 @@ export interface BrowserTab extends TabSnapshot {
 
 export interface BrowserShellState {
   closedTabHistory: Array<Pick<TabSnapshot, "title" | "url">>;
+  findBarVisible: boolean;
   devtoolsView: WebContentsView;
   devtoolsVisible: boolean;
   dockPosition: DockPosition;
@@ -243,9 +244,7 @@ export function getDesktopChromePlatformToken() {
     return "Macintosh; Intel Mac OS X 10_15_7";
   }
 
-  return process.arch === "arm64"
-    ? "X11; Linux aarch64"
-    : "X11; Linux x86_64";
+  return process.arch === "arm64" ? "X11; Linux aarch64" : "X11; Linux x86_64";
 }
 
 export function buildDesktopChromeUserAgent() {

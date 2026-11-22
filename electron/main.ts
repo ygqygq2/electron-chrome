@@ -53,7 +53,6 @@ const shouldUsePersistedCompatibilityGpu =
   runtimePreferences.preferCompatibilityGpu;
 const shouldUseCompatibilityGpu =
   shouldUsePersistedCompatibilityGpu ||
-  isWslEnvironment() ||
   (process.platform === "linux" && !hasDxgAdapter());
 
 function getEnvironmentLabel() {
@@ -116,12 +115,15 @@ function applyRuntimeStrategy() {
     app.commandLine.appendSwitch("disable-gpu");
     app.commandLine.appendSwitch("disable-gpu-compositing");
   }
+
+  // WSL 内核更新后 GPU 子进程沙箱初始化失败(error_code=1002)，
+  // 仅禁用 GPU 仍会拉起 GPU 进程并导致主进程退出，需同时关闭 GPU 进程沙箱。
+  if (isWslEnvironment()) {
+    app.commandLine.appendSwitch("disable-gpu-sandbox");
+  }
 }
 
 applyRuntimeStrategy();
-
-let shellMenuController: ReturnType<typeof createShellMenuController>;
-let downloadsController: ReturnType<typeof createDownloadsController>;
 
 const shellController = createShellController({
   favoritesController,
@@ -135,7 +137,7 @@ const shellController = createShellController({
   },
 });
 
-downloadsController = createDownloadsController({
+const downloadsController = createDownloadsController({
   getActiveDownloadTargetWebContents: () => {
     const hostWindow = shellController.getLastFocusedShellWindow();
     const state = hostWindow ? shellController.getWindowState(hostWindow.id) : null;
@@ -219,7 +221,7 @@ function createDockedWindow() {
   return win;
 }
 
-shellMenuController = createShellMenuController({
+const shellMenuController = createShellMenuController({
   createWindow: () => createDockedWindow(),
   downloads: downloadsController,
   runtimePreferences,

@@ -168,7 +168,7 @@ export function createHistoryPageHtml(
         let sortMode = "time";
         let selectedDayKey = defaultSelectedDayKey;
 
-        function escapeHtml(value) { return String(value || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/\"/g, "&quot;").replace(/'/g, "&#39;"); }
+        function escapeHtml(value) { return String(value || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;"); }
         function getDomain(url) { try { return new URL(url).hostname; } catch { return url; } }
         function getFaviconUrl(url) { try { return new URL("/favicon.ico", new URL(url).origin).toString(); } catch { return ""; } }
         function formatDayKey(visitedAt) { const date = new Date(visitedAt); return date.getFullYear() + "-" + date.getMonth() + "-" + date.getDate(); }
